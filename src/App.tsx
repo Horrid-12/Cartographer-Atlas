@@ -162,16 +162,17 @@ export default function App() {
     });
   }
 
-  function handleUseHint() {
-    let ok = false;
-    setProgress((previous) => {
-      if (previous.ink < 1) return previous;
-      ok = true;
-      const next = { ...previous, ink: previous.ink - 1 };
-      saveProgress(next);
-      return next;
-    });
-    return ok;
+  function handleUseHint(): boolean {
+    if (progress.ink < 1) {
+      return false;
+    }
+    const next: Progress = {
+      ...progress,
+      ink: Math.max(0, progress.ink - 1),
+    };
+    setProgress(next);
+    saveProgress(next);
+    return true;
   }
 
   function selectMission(index: number) {
@@ -260,6 +261,7 @@ export default function App() {
                 <MissionPanel
                   key={mission.id}
                   mission={mission}
+                  ink={progress.ink}
                   onSolve={handleSolve}
                   onUseHint={handleUseHint}
                 />

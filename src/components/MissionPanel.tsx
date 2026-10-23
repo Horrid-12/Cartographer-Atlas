@@ -33,10 +33,12 @@ function normalize(value: string): string {
 
 export function MissionPanel({
   mission,
+  ink,
   onSolve,
   onUseHint,
 }: {
   mission: Mission;
+  ink?: number;
   onSolve: (
     score: number,
     missionId: string,
@@ -341,7 +343,7 @@ export function MissionPanel({
           <Button
             variant="secondary"
             onClick={useHint}
-            disabled={solved || clueRevealed}
+            disabled={solved || clueRevealed || (typeof ink === "number" && ink < HINT_INK_COST)}
             className="min-h-[44px] flex items-center gap-2 text-xs font-bold uppercase tracking-wider shadow cursor-pointer"
           >
             {clueRevealed ? (
@@ -352,7 +354,10 @@ export function MissionPanel({
             ) : (
               <>
                 <Droplets className="h-4 w-4 text-[#4a89a0]" />
-                <span>Consult Clue ({HINT_INK_COST} Ink)</span>
+                <span>
+                  Consult Clue ({HINT_INK_COST} Ink)
+                  {typeof ink === "number" ? ` (${ink} Left)` : ""}
+                </span>
               </>
             )}
           </Button>
