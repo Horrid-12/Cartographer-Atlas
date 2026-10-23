@@ -8,7 +8,6 @@ import {
   HINT_INK_COST,
   type Mission,
 } from "../lib/game";
-import { getClue } from "../lib/ai";
 import {
   playClick,
   playHintSound,
@@ -24,7 +23,6 @@ import {
   Check,
   ShieldCheck,
   Droplets,
-  HelpCircle,
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
@@ -51,7 +49,7 @@ export function MissionPanel({
   const [answer, setAnswer] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
-  const [revealedHints, setRevealedHints] = useState<string[]>([]);
+  const [clueRevealed, setClueRevealed] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error" | "info";
     text: string;
@@ -122,10 +120,10 @@ export function MissionPanel({
 
   function useHint() {
     if (solved) return;
-    if (hintsUsed >= mission.hints.length) {
+    if (clueRevealed) {
       setFeedback({
         type: "info",
-        text: "All archival hints for this dispatch have been consulted.",
+        text: "The archival clue is already active. Use the Manual Cipher Shift Controller.",
       });
       return;
     }
@@ -139,10 +137,12 @@ export function MissionPanel({
       return;
     }
     playHintSound();
-    const nextIndex = hintsUsed;
-    const clue = getClue(mission, nextIndex);
-    setHintsUsed((value) => value + 1);
-    setRevealedHints((prev) => [...prev, clue]);
+    setClueRevealed(true);
+    setHintsUsed(1);
+    setFeedback({
+      type: "success",
+      text: "Archival Clue Revealed: Manual Cipher Shift Controller unlocked.",
+    });
   }
 
   return (
@@ -180,115 +180,127 @@ export function MissionPanel({
         </div>
       </div>
 
-      {/* Manual Shift Input Section (Replacing Cipher Wheel) */}
-      <div className="rounded-md border border-gold/60 bg-[#f4ebd6] p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ink/10 pb-2.5">
-          <div className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-gold" />
-            <h3 className="text-sm sm:text-base font-bold text-[#2d2214] tracking-wide">
-              Manual Cipher Shift Controller
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={() => handleShiftChange(0)}
-            disabled={solved}
-            className="flex items-center gap-1 rounded border border-ink/20 bg-[#e8dbc0] px-2.5 py-1 text-xs font-semibold text-[#473822] hover:bg-[#dccdb0] active:scale-95 disabled:opacity-50 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
-          >
-            <RotateCcw className="h-3 w-3 text-gold" />
-            <span>Reset (0)</span>
-          </button>
-        </div>
-
-        {/* Stepper & Direct Number Input */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="manual-shift-input"
-              className="text-xs font-bold uppercase tracking-wider text-[#6b5839]"
+      {/* Clue Section: Manual Cipher Shift Controller */}
+      {clueRevealed || solved ? (
+        <div className="rounded-md border border-gold/60 bg-[#f4ebd6] p-4 sm:p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ink/10 pb-2.5">
+            <div className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-gold" />
+              <h3 className="text-sm sm:text-base font-bold text-[#2d2214] tracking-wide">
+                Clue: Manual Cipher Shift Controller
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleShiftChange(0)}
+              disabled={solved}
+              className="flex items-center gap-1 rounded border border-ink/20 bg-[#e8dbc0] px-2.5 py-1 text-xs font-semibold text-[#473822] hover:bg-[#dccdb0] active:scale-95 disabled:opacity-50 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
             >
-              Shift Offset Key:
-            </label>
-            <div className="flex items-center rounded border-2 border-ink/30 bg-[#fcf9f2] shadow-inner overflow-hidden">
-              <button
-                type="button"
-                onClick={() => handleShiftChange(dialShift - 1)}
-                disabled={solved}
-                aria-label="Decrease shift key offset"
-                className="flex h-10 w-10 items-center justify-center bg-[#ece0c9] text-ink hover:bg-[#dfd1b5] active:scale-95 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+              <RotateCcw className="h-3 w-3 text-gold" />
+              <span>Reset (0)</span>
+            </button>
+          </div>
+
+          {/* Stepper & Direct Number Input */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="manual-shift-input"
+                className="text-xs font-bold uppercase tracking-wider text-[#6b5839]"
               >
-                <Minus className="h-4 w-4" />
-              </button>
+                Shift Offset Key:
+              </label>
+              <div className="flex items-center rounded border-2 border-ink/30 bg-[#fcf9f2] shadow-inner overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => handleShiftChange(dialShift - 1)}
+                  disabled={solved}
+                  aria-label="Decrease shift key offset"
+                  className="flex h-10 w-10 items-center justify-center bg-[#ece0c9] text-ink hover:bg-[#dfd1b5] active:scale-95 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <input
+                  id="manual-shift-input"
+                  type="number"
+                  min={0}
+                  max={25}
+                  value={dialShift}
+                  disabled={solved}
+                  onChange={handleShiftInput}
+                  aria-label="Caesar shift key offset from 0 to 25"
+                  className="h-10 w-16 text-center font-display text-lg font-bold text-wax bg-transparent focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleShiftChange(dialShift + 1)}
+                  disabled={solved}
+                  aria-label="Increase shift key offset"
+                  className="flex h-10 w-10 items-center justify-center bg-[#ece0c9] text-ink hover:bg-[#dfd1b5] active:scale-95 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Slider for accessibility & fast scrubbing */}
+            <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+              <span className="text-[11px] text-[#78674d]">0</span>
               <input
-                id="manual-shift-input"
-                type="number"
+                type="range"
                 min={0}
                 max={25}
                 value={dialShift}
                 disabled={solved}
-                onChange={handleShiftInput}
-                aria-label="Caesar shift key offset from 0 to 25"
-                className="h-10 w-16 text-center font-display text-lg font-bold text-wax bg-transparent focus:outline-none"
+                onChange={(e) => handleShiftChange(parseInt(e.target.value, 10))}
+                aria-label="Shift key scrub slider"
+                className="w-full h-2 bg-[#dfceb0] rounded-lg appearance-none cursor-pointer accent-wax disabled:opacity-50"
               />
-              <button
-                type="button"
-                onClick={() => handleShiftChange(dialShift + 1)}
-                disabled={solved}
-                aria-label="Increase shift key offset"
-                className="flex h-10 w-10 items-center justify-center bg-[#ece0c9] text-ink hover:bg-[#dfd1b5] active:scale-95 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
+              <span className="text-[11px] text-[#78674d]">25</span>
             </div>
           </div>
 
-          {/* Quick Slider for accessibility & fast scrubbing */}
-          <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-            <span className="text-[11px] text-[#78674d]">0</span>
-            <input
-              type="range"
-              min={0}
-              max={25}
-              value={dialShift}
-              disabled={solved}
-              onChange={(e) => handleShiftChange(parseInt(e.target.value, 10))}
-              aria-label="Shift key scrub slider"
-              className="w-full h-2 bg-[#dfceb0] rounded-lg appearance-none cursor-pointer accent-wax disabled:opacity-50"
-            />
-            <span className="text-[11px] text-[#78674d]">25</span>
+          {/* Transcribed Working Slate Live Output */}
+          <div className="mt-4 pt-3 border-t border-ink/10">
+            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#635133]">
+              <span>
+                Transcribed Working Slate (Shift +{dialShift}):
+              </span>
+              <button
+                type="button"
+                onClick={handleApplyToAnswer}
+                disabled={solved}
+                className="flex items-center gap-1 rounded border border-ink/20 bg-[#e7d8bb] px-2.5 py-1 text-xs font-bold text-wax hover:bg-[#dfcead] active:scale-95 disabled:opacity-50 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+              >
+                {applied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-wax" />
+                    <span>Applied to Answer</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5 text-gold" />
+                    <span>Apply to Answer &darr;</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="cipher-text mt-2 min-h-14 rounded border-2 border-gold/50 bg-[#ded0b6] p-3.5 text-center text-lg sm:text-xl font-bold text-wax shadow-inner break-words">
+              {liveTranslation}
+            </div>
           </div>
         </div>
-
-        {/* Transcribed Working Slate Live Output */}
-        <div className="mt-4 pt-3 border-t border-ink/10">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#635133]">
-            <span>
-              Transcribed Working Slate (Shift +{dialShift}):
-            </span>
-            <button
-              type="button"
-              onClick={handleApplyToAnswer}
-              disabled={solved}
-              className="flex items-center gap-1 rounded border border-ink/20 bg-[#e7d8bb] px-2.5 py-1 text-xs font-bold text-wax hover:bg-[#dfcead] active:scale-95 disabled:opacity-50 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
-            >
-              {applied ? (
-                <>
-                  <Check className="h-3.5 w-3.5 text-wax" />
-                  <span>Applied to Answer</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5 text-gold" />
-                  <span>Apply to Answer &darr;</span>
-                </>
-              )}
-            </button>
+      ) : (
+        <div className="rounded-md border border-dashed border-gold/50 bg-[#f4ebd6]/50 p-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-[#735d33]">
+            <KeyRound className="h-4 w-4 text-gold" />
+            <span>Archival Clue Locked</span>
           </div>
-          <div className="cipher-text mt-2 min-h-14 rounded border-2 border-gold/50 bg-[#ded0b6] p-3.5 text-center text-lg sm:text-xl font-bold text-wax shadow-inner break-words">
-            {liveTranslation}
-          </div>
+          <p className="mt-1 text-xs text-[#635133]/80">
+            Consult the clue below (-{HINT_INK_COST} Ink) to reveal the Manual Cipher Shift Controller.
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Plaintext Manual Text Input & Submission */}
       <div className="space-y-3">
@@ -307,7 +319,11 @@ export function MissionPanel({
           onKeyDown={(event) => {
             if (event.key === "Enter") submit();
           }}
-          placeholder="Type the decoded message or use the transcribed slate above..."
+          placeholder={
+            clueRevealed || solved
+              ? "Type the decoded message or use the transcribed slate above..."
+              : "Type the decoded message or consult clue for shift controller..."
+          }
           className="w-full rounded border-2 border-ink/30 bg-[#fefcf8] px-4 py-3 font-display text-base sm:text-lg font-bold tracking-wider text-ink shadow-inner focus:border-wax focus:outline-none focus:ring-2 focus:ring-wax/40 disabled:bg-[#eee3ce]"
         />
 
@@ -325,13 +341,20 @@ export function MissionPanel({
           <Button
             variant="secondary"
             onClick={useHint}
-            disabled={solved || hintsUsed >= mission.hints.length}
+            disabled={solved || clueRevealed}
             className="min-h-[44px] flex items-center gap-2 text-xs font-bold uppercase tracking-wider shadow cursor-pointer"
           >
-            <Droplets className="h-4 w-4 text-[#4a89a0]" />
-            <span>
-              Consult Clue ({HINT_INK_COST} Ink)
-            </span>
+            {clueRevealed ? (
+              <>
+                <Check className="h-4 w-4 text-wax" />
+                <span>Clue Active (Shift Controller)</span>
+              </>
+            ) : (
+              <>
+                <Droplets className="h-4 w-4 text-[#4a89a0]" />
+                <span>Consult Clue ({HINT_INK_COST} Ink)</span>
+              </>
+            )}
           </Button>
         </div>
 
@@ -357,32 +380,10 @@ export function MissionPanel({
           </div>
         )}
 
-        {/* Revealed Clues List */}
-        {revealedHints.length > 0 && (
-          <div className="mt-3 rounded border border-ink/20 bg-[#f1e6d0] p-4">
-            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#695634]">
-              <HelpCircle className="h-3.5 w-3.5 text-gold" /> Revealed Clues ({revealedHints.length}/{mission.hints.length})
-            </span>
-            <ul className="mt-2 space-y-2">
-              {revealedHints.map((clue, idx) => (
-                <li
-                  key={idx}
-                  className="rounded border border-ink/10 bg-[#faf3e6] p-2.5 text-xs italic text-[#3f3320]"
-                >
-                  <span className="font-bold not-italic text-wax mr-1">
-                    Clue #{idx + 1}:
-                  </span>
-                  {clue}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {/* Solved Summary */}
         {solved && (
           <p className="mt-2 text-xs text-ink/70">
-            Shift verified: Key +{mission.shift}. Attempts: {attempts}. Clues consulted: {hintsUsed}.
+            Shift verified: Key +{mission.shift}. Attempts: {attempts}. Clue consulted: {clueRevealed ? "Yes" : "No"}.
           </p>
         )}
       </div>
