@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Map as MapIcon } from "lucide-react";
 import { Button } from "./components/Button";
@@ -23,6 +23,7 @@ import {
 } from "./lib/game";
 import { SECTOR_METAS } from "./data/lore";
 import { loadProgress, saveProgress, resetProgress } from "./game/state";
+import { startBackgroundMusic } from "./lib/audio";
 
 export default function App() {
   const reducedMotion = useReducedMotion();
@@ -38,6 +39,20 @@ export default function App() {
   const isAllThreeComplete = ["1", "2", "3"].every((id) =>
     progress.completed.includes(id)
   );
+
+  useEffect(() => {
+    const handleGesture = () => {
+      startBackgroundMusic();
+      window.removeEventListener("pointerdown", handleGesture);
+      window.removeEventListener("keydown", handleGesture);
+    };
+    window.addEventListener("pointerdown", handleGesture);
+    window.addEventListener("keydown", handleGesture);
+    return () => {
+      window.removeEventListener("pointerdown", handleGesture);
+      window.removeEventListener("keydown", handleGesture);
+    };
+  }, []);
 
   function handleSolve(
     _score: number,
@@ -188,9 +203,9 @@ export default function App() {
 
       {/* Grand All-Seals-Complete State Banner */}
       {isAllThreeComplete && (
-        <div className="border-b border-wax/40 bg-gradient-to-r from-[#97403a]/20 via-[#a9813c]/20 to-[#97403a]/20 py-2 px-4 text-center font-display text-xs text-[#2a2419] shadow-inner">
-          <span className="font-bold tracking-wider text-wax uppercase">
-            ★ Royal Cartographic Achievement: All Three Imperial Seals Restored ★
+        <div className="border-b border-wax/40 bg-gradient-to-r from-[#97403a]/20 via-[#a9813c]/20 to-[#97403a]/20 py-2.5 px-4 text-center font-display text-xs text-[#2a2419] shadow-inner">
+          <span className="font-bold tracking-wider text-wax uppercase sm:text-sm">
+            ★ All Seals Broken &bull; Royal Cartographic Achievement: All Three Imperial Seals Restored ★
           </span>
         </div>
       )}

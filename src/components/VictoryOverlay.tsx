@@ -17,7 +17,7 @@ import {
   type Mission,
 } from "../lib/game";
 import { Button } from "./Button";
-import { playAllSealsBrokenSound, playSuccessSound, playClick } from "../lib/audio";
+import { playVictoryMusic, stopVictoryMusic, playClick } from "../lib/audio";
 
 export interface ScoreBreakdown {
   baseXp: number;
@@ -110,11 +110,10 @@ export function VictoryOverlay({
   const [displayXp, setDisplayXp] = useState(reducedMotion ? activeBreakdown.finalXp : 0);
 
   useEffect(() => {
-    if (isAllThreeComplete) {
-      playAllSealsBrokenSound();
-    } else {
-      playSuccessSound();
-    }
+    playVictoryMusic();
+    return () => {
+      stopVictoryMusic();
+    };
   }, [isAllThreeComplete]);
 
   useEffect(() => {
@@ -383,7 +382,7 @@ export function VictoryOverlay({
               <div className="flex items-center justify-center gap-2 text-wax">
                 <Trophy className="h-5 w-5 text-gold" />
                 <span className="font-bold uppercase tracking-wider text-xs">
-                  All Royal Seals Restored
+                  All Royal Seals Restored &bull; All Seals Broken
                 </span>
                 <Trophy className="h-5 w-5 text-gold" />
               </div>
@@ -403,7 +402,11 @@ export function VictoryOverlay({
           >
             <Button
               variant="secondary"
-              onClick={onReturnToMap}
+              onClick={() => {
+                playClick();
+                stopVictoryMusic();
+                onReturnToMap();
+              }}
               className="flex items-center gap-1.5"
             >
               <MapPin className="h-4 w-4 text-gold" />
@@ -413,7 +416,11 @@ export function VictoryOverlay({
             {hasNextMission && onContinue && (
               <Button
                 variant="primary"
-                onClick={onContinue}
+                onClick={() => {
+                  playClick();
+                  stopVictoryMusic();
+                  onContinue();
+                }}
                 className="flex items-center gap-1.5"
               >
                 <span>Continue to Next Mission</span>
