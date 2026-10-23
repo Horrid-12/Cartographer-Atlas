@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Button } from "./Button";
 import { Card } from "./Card";
+import { CipherWheel } from "./CipherWheel";
 import {
   computeCiphertext,
+  decodeText,
   scoreMission,
   HINT_INK_COST,
   type Mission,
@@ -23,6 +25,7 @@ export function MissionPanel({
   onUseHint: () => boolean;
 }) {
   const ciphertext = computeCiphertext(mission);
+  const [dialShift, setDialShift] = useState(0);
   const [answer, setAnswer] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
@@ -30,6 +33,8 @@ export function MissionPanel({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [solved, setSolved] = useState(false);
   const [startedAt] = useState(() => Date.now());
+
+  const liveTranslation = decodeText(ciphertext, dialShift);
 
   function submit() {
     if (solved) return;
@@ -39,6 +44,7 @@ export function MissionPanel({
       const timeSec = (Date.now() - startedAt) / 1000;
       const score = scoreMission(mission, nextAttempts, hintsUsed, timeSec);
       setSolved(true);
+      setDialShift(mission.shift);
       setFeedback(`Solved. +${score} XP`);
       onSolve(score, mission.id);
     } else {
@@ -62,13 +68,52 @@ export function MissionPanel({
   }
 
   return (
-    <Card variant="framed">
-      <h2 className="text-2xl font-bold">{mission.title}</h2>
-      <p className="mt-1 text-sm text-ink/70">{mission.place}</p>
-      <div className="cipher-text mt-6 rounded-md border border-ink/20 bg-ink/5 p-4 text-center text-lg">
-        {ciphertext}
+    <Card variant="framed" className="space-y-6 bg-[#fbf5e7]">
+      <div className="flex items-center justify-between border-b border-ink/15 pb-2">
+        <div>
+          <h2 className="text-2xl font-bold">{mission.title}</h2>
+          <p className="mt-1 text-sm text-ink/70">{mission.place}</p>
+        </div>
+        <span className="rounded border border-gold/60 bg-gold/10 px-2 py-0.5 text-xs font-bold text-gold">
+          +{mission.xp} XP
+        </span>
       </div>
-      <div className="mt-6 flex flex-col gap-3">
+
+      <div>
+        <span className="block text-xs font-bold uppercase tracking-wider text-ink/70">
+          Encrypted Signal
+        </span>
+        <div className="cipher-text mt-2 rounded-md border border-ink/20 bg-ink/5 p-4 text-center text-lg font-bold">
+          {ciphertext}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="block text-xs font-bold uppercase tracking-wider text-ink/70">
+            Transcribed Working Slate (Shift +{dialShift})
+          </span>
+          <button
+            type="button"
+            onClick={() => setAnswer(liveTranslation)}
+            className="text-xs font-semibold text-wax hover:underline"
+          >
+            Apply to answer
+          </button>
+        </div>
+        <div className="cipher-text mt-2 rounded-md border-2 border-gold/40 bg-[#ded0b6] p-4 text-center text-lg font-bold text-wax">
+          {liveTranslation}
+        </div>
+      </div>
+
+      <CipherWheel
+        shift={dialShift}
+        onShiftChange={setDialShift}
+        targetShift={mission.shift}
+        solved={solved}
+      />
+
+      <div className="flex flex-col gap-3">
         <input
           type="text"
           value={answer}
@@ -97,7 +142,6 @@ export function MissionPanel({
           </p>
         ) : null}
       </div>
-      <p className="mt-4 text-xs text-ink/50">Shift {mission.shift}</p>
     </Card>
   );
 }

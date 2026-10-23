@@ -13,7 +13,7 @@
 | 5 | "The GitHub repo (Horrid-12/Cartographer-Atlas) is where you push and pull the updates." | OpenCode (GLM-5.3-Flash) | Cloned the repo into the workspace; committed src/lib/game.ts (d364206) and pushed to origin/main, then fetched to confirm sync |
 | 6 | "Done — fill in the AI_Log entry." | OpenCode (GLM-5.3-Flash) | This file: real prompts, tools and the npx mistake below recorded for Phase 2 |
 | 7 | "Resume and wire the UI: StatusBar, MissionBoard, MissionPanel, App orchestration, localStorage state module." | OpenCode (beam-free) | Added src/game/state.ts (+ tests), three components, rewrote App.tsx; build and 8 tests pass |
-| 8 | | | |
+| 8 | "Proceed with Phase 3 UI: World Map, Decryption Desk, Concentric Astronomical Cipher Wheel, Expedition Journal, and Archive of Curiosities matching the reference designs." | Antigravity (Gemini 3.8) | Implemented full WorldMap canvas, interactive animated CipherWheel with gear controls and live working slate, DecryptionDesk, ExpeditionJournal, ArchiveCuriosities, and TopNav ribbon; all 11 unit tests and production build pass |
 | 9 | | | |
 | 10 | | | |
 
@@ -27,6 +27,7 @@
 | Git 2.55 (Git for Windows) | Cloned Cartographer-Atlas into the workspace; staged, committed (d364206) and pushed src/lib/game.ts to origin/main; fetch + `git status -sb` to confirm sync |
 | TypeScript 5 via `npx -p typescript@5 tsc` | `--noEmit --strict --target ES2020` typecheck of game.ts; second pass emitted CommonJS output so the engine could be unit-tested at runtime |
 | Node.js 24 + `node:assert/strict` | Executed cipher assertions: spec examples, case/punctuation preservation, modulo wraparound (25/26/27/52, negatives) and codec round-trips over 10 shift values |
+| Antigravity — Gemini 3.8 | Implemented Phase 3 UI polish: World Map, Decryption Desk, Concentric Astronomical Cipher Wheel, TopNav, Expedition Journal, Archive of Curiosities; verified test suite and build |
 
 ## 3. One Time AI Got It Wrong
 

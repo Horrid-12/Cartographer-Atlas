@@ -1,35 +1,59 @@
-import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { Map as MapIcon } from "lucide-react";
-import { Button } from "./components/Button";
-import { StatusBar } from "./components/StatusBar";
-import { MissionBoard } from "./components/MissionBoard";
-import { MissionPanel } from "./components/MissionPanel";
+import { useState, useEffect } from "react";
+import { TopNav, type NavTab } from "./components/TopNav";
+import { WorldMap } from "./components/WorldMap";
+import { DecryptionDesk } from "./components/DecryptionDesk";
+import { ExpeditionJournal } from "./components/ExpeditionJournal";
+import { ArchiveCuriosities } from "./components/ArchiveCuriosities";
+import { SECTOR_METAS } from "./data/lore";
 import {
   MISSIONS,
   missionUnlocked,
-  rankFor,
   type Progress,
+  INK_REWARD,
 } from "./lib/game";
-import { loadProgress, saveProgress } from "./game/state";
+import { loadProgress, saveProgress, resetProgress } from "./game/state";
 
 export default function App() {
-  const reducedMotion = useReducedMotion();
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
-  const initialIndex = MISSIONS.findIndex((m) => m.id === progress.activeMission);
-  const [activeIndex, setActiveIndex] = useState(initialIndex >= 0 ? initialIndex : 0);
+  const [currentTab, setCurrentTab] = useState<NavTab>("map");
 
-  const mission = MISSIONS[activeIndex];
+  const initialIndex = MISSIONS.findIndex((m) => m.id === progress.activeMission);
+  const [activeSectorIndex, setActiveSectorIndex] = useState(
+    initialIndex >= 0 ? initialIndex : 0
+  );
+
+  useEffect(() => {
+    if (progress.activeMission) {
+      const idx = MISSIONS.findIndex((m) => m.id === progress.activeMission);
+      if (idx >= 0 && idx !== activeSectorIndex) {
+        setActiveSectorIndex(idx);
+      }
+    }
+  }, [progress.activeMission]);
+
+  const activeMission = MISSIONS[activeSectorIndex] ?? MISSIONS[0];
+  const activeMeta = SECTOR_METAS[activeSectorIndex] ?? SECTOR_METAS[0];
+  const isCurrentSolved = progress.completed.includes(activeMission.id);
+
+  function handleSelectSector(index: number) {
+    if (!missionUnlocked(index, progress.completed)) return;
+    setActiveSectorIndex(index);
+    setProgress((prev) => {
+      const next = { ...prev, activeMission: MISSIONS[index]?.id ?? null };
+      saveProgress(next);
+      return next;
+    });
+  }
 
   function handleSolve(score: number, missionId: string) {
-    setProgress((previous) => {
-      const completed = previous.completed.includes(missionId)
-        ? previous.completed
-        : [...previous.completed, missionId];
-      const nextIndex = Math.min(activeIndex + 1, MISSIONS.length - 1);
-      const next = {
-        xp: previous.xp + score,
-        ink: previous.ink + 2,
+    setProgress((prev) => {
+      const completed = prev.completed.includes(missionId)
+        ? prev.completed
+        : [...prev.completed, missionId];
+      const nextIndex = Math.min(activeSectorIndex + 1, MISSIONS.length - 1);
+      const next: Progress = {
+        xp: prev.xp + score,
+        ink: prev.ink + INK_REWARD,
         completed,
         activeMission: MISSIONS[nextIndex]?.id ?? null,
       };
@@ -38,81 +62,96 @@ export default function App() {
     });
   }
 
-  function handleUseHint() {
+  function handleUseHint(): boolean {
     let ok = false;
-    setProgress((previous) => {
-      if (previous.ink < 1) return previous;
+    setProgress((prev) => {
+      if (prev.ink < 1) return prev;
       ok = true;
-      const next = { ...previous, ink: previous.ink - 1 };
+      const next: Progress = { ...prev, ink: prev.ink - 1 };
       saveProgress(next);
       return next;
     });
     return ok;
   }
 
-  function selectMission(index: number) {
-    if (!missionUnlocked(index, progress.completed)) return;
-    setActiveIndex(index);
-    setProgress((previous) => {
-      const next = { ...previous, activeMission: MISSIONS[index]?.id ?? null };
-      saveProgress(next);
-      return next;
-    });
+  function handleNextSector() {
+    const nextIdx = Math.min(activeSectorIndex + 1, MISSIONS.length - 1);
+    if (missionUnlocked(nextIdx, progress.completed)) {
+      setActiveSectorIndex(nextIdx);
+      setProgress((prev) => {
+        const next = { ...prev, activeMission: MISSIONS[nextIdx]?.id ?? null };
+        saveProgress(next);
+        return next;
+      });
+      setCurrentTab("desk");
+    } else {
+      setCurrentTab("map");
+    }
+  }
+
+  function handleReset() {
+    const fresh = resetProgress();
+    setProgress(fresh);
+    setActiveSectorIndex(0);
+    setCurrentTab("map");
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
   }
 
   return (
-    <main className="parchment min-h-screen text-ink">
-      <div className="mx-auto max-w-5xl px-6 py-10">
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <MapIcon className="h-8 w-8 text-ink" aria-hidden="true" />
-            <h1 className="text-4xl font-bold">The Cartographer's Atlas</h1>
-          </div>
-          <span className="font-display text-sm text-ink/70">
-            {rankFor(progress.xp)}
-          </span>
-        </header>
-        <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 8 }}
-          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mt-6"
-        >
-          <StatusBar progress={progress} />
-        </motion.div>
+    <div className="min-h-screen bg-[#1c160e] text-ink font-display antialiased">
+      <TopNav
+        currentTab={currentTab}
+        onSelectTab={setCurrentTab}
+        progress={progress}
+        activeSectorRoman={activeMeta.roman}
+        isCurrentSolved={isCurrentSolved}
+      />
 
-        <div className="mt-8 grid gap-6 md:grid-cols-[260px_1fr]">
-          <aside>
-            <MissionBoard
+      <main className="w-full">
+        {currentTab === "map" && (
+          <WorldMap
+            progress={progress}
+            activeSectorIndex={activeSectorIndex}
+            onSelectSector={handleSelectSector}
+            onEnterDesk={() => setCurrentTab("desk")}
+          />
+        )}
+
+        {currentTab === "desk" && (
+          <div className="parchment min-h-[calc(100vh-100px)] py-6">
+            <DecryptionDesk
+              mission={activeMission}
+              sectorIndex={activeSectorIndex}
               progress={progress}
-              activeIndex={activeIndex}
-              onSelect={selectMission}
+              onSolve={handleSolve}
+              onUseHint={handleUseHint}
+              onNextSector={handleNextSector}
+              onReturnToMap={() => setCurrentTab("map")}
             />
-            <div className="mt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  localStorage.clear();
-                  window.location.reload();
-                }}
-              >
-                Reset progress
-              </Button>
-            </div>
-          </aside>
-          <section>
-            {mission ? (
-              <MissionPanel
-                key={mission.id}
-                mission={mission}
-                onSolve={handleSolve}
-                onUseHint={handleUseHint}
-              />
-            ) : null}
-          </section>
-        </div>
-      </div>
-    </main>
+          </div>
+        )}
+
+        {currentTab === "journal" && (
+          <div className="parchment min-h-[calc(100vh-100px)] py-6">
+            <ExpeditionJournal
+              progress={progress}
+              onSelectSector={handleSelectSector}
+              onGoToDesk={(idx) => {
+                handleSelectSector(idx);
+                setCurrentTab("desk");
+              }}
+            />
+          </div>
+        )}
+
+        {currentTab === "archive" && (
+          <div className="parchment min-h-[calc(100vh-100px)] py-6">
+            <ArchiveCuriosities onReset={handleReset} />
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

@@ -52,7 +52,7 @@ export function saveProgress(progress: Progress): void {
   try {
     s.setItem(PERSISTENCE_KEY, JSON.stringify(progress));
   } catch {
-    // ignore storage failures
+    return;
   }
 }
 
@@ -62,7 +62,7 @@ export function resetProgress(): Progress {
     try {
       s.removeItem(PERSISTENCE_KEY);
     } catch {
-      // ignore
+      return { ...DEFAULT_PROGRESS };
     }
   }
   return { ...DEFAULT_PROGRESS };
