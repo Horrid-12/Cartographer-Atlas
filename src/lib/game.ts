@@ -1,7 +1,8 @@
 /**
  * The Cartographer's Atlas — Core Game Engine
  *
- * Pure TypeScript domain logic. No React, no DOM, no I/O.
+ * Pure TypeScript domain logic + a single localStorage persistence seam.
+ * No React, no DOM beyond the guarded storage calls.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -232,4 +233,60 @@ export function missionUnlocked(index: number, completed: string[]): boolean {
 
   const previous = MISSIONS[index - 1];
   return previous !== undefined && completed.includes(previous.id);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                        Persistence (localStorage)                          */
+/* -------------------------------------------------------------------------- */
+
+/** Fresh state for a brand-new cartographer. */
+export function startingProgress(): Progress {
+  return { xp: 0, ink: START_INK, completed: [], activeMission: null };
+}
+
+/** True when `localStorage` is available in the current environment. */
+function storageAvailable(): boolean {
+  return typeof localStorage !== "undefined" && localStorage !== null;
+}
+
+/**
+ * Reads saved progress from localStorage.
+ *
+ * Returns `startingProgress()` when there is no save, when the JSON is
+ * corrupted, or when parsing throws for any reason — a bad save must never
+ * crash the UI. A parsed object that is simply outdated (missing fields) is
+ * merged over the starting defaults so every field is present.
+ */
+export function loadProgress(): Progress {
+  try {
+    if (!storageAvailable()) return startingProgress();
+
+    const raw = localStorage.getItem(PERSISTENCE_KEY);
+    if (raw === null) return startingProgress();
+
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return startingProgress();
+    }
+
+    return { ...startingProgress(), ...(parsed as Partial<Progress>) };
+  } catch {
+    return startingProgress();
+  }
+}
+
+/**
+ * Writes progress to localStorage under PERSISTENCE_KEY.
+ *
+ * Silently ignores failures — private-browsing storage limits, quota errors
+ * or a missing storage API must never break gameplay.
+ */
+export function saveProgress(progress: Progress): void {
+  try {
+    if (!storageAvailable()) return;
+
+    localStorage.setItem(PERSISTENCE_KEY, JSON.stringify(progress));
+  } catch {
+    // Saving is best-effort; play continues without persistence.
+  }
 }
