@@ -12,7 +12,7 @@
 | 4 | "Task 3: The Cipher Engine — pure caesar(text, shift, forward) that preserves casing, ignores punctuation/digits, wraps shifts with modulo 26; plus computeCiphertext() and decodeText() helpers." | OpenCode (GLM-5.3-Flash) | Working Caesar engine; verified via tsc --strict and a Node assertion suite (A→D examples, casing/punctuation, wraparound at 25/26/52/−3, decode(cipher(x)) round-trips) |
 | 5 | "The GitHub repo (Horrid-12/Cartographer-Atlas) is where you push and pull the updates." | OpenCode (GLM-5.3-Flash) | Cloned the repo into the workspace; committed src/lib/game.ts (d364206) and pushed to origin/main, then fetched to confirm sync |
 | 6 | "Done — fill in the AI_Log entry." | OpenCode (GLM-5.3-Flash) | This file: real prompts, tools and the npx mistake below recorded for Phase 2 |
-| 7 | | | |
+| 7 | "Resume and wire the UI: StatusBar, MissionBoard, MissionPanel, App orchestration, localStorage state module." | OpenCode (beam-free) | Added src/game/state.ts (+ tests), three components, rewrote App.tsx; build and 8 tests pass |
 | 8 | | | |
 | 9 | | | |
 | 10 | | | |
