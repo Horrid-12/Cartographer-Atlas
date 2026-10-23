@@ -39,6 +39,95 @@ export const ATTEMPT_PENALTY = 10;
 export const PERSISTENCE_KEY = "atlas-progress-v1";
 
 /* -------------------------------------------------------------------------- */
+/*                               Mission Data                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The campaign. Always ordered — unlock checks compare a mission's index
+ * against the immediately preceding mission's ID.
+ */
+export const MISSIONS: Mission[] = [
+  {
+    id: "1",
+    title: "The Old Bridge",
+    place: "Cistern",
+    shift: 7,
+    plaintext: "THE LANTERN BURNS BENEATH THE BRIDGE",
+    xp: 100,
+    hints: [
+      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
+      "Start near the middle of the first half of the alphabet — halfway between 5 and 10.",
+    ],
+  },
+  {
+    id: "2",
+    title: "The Sun Clock",
+    place: "Meridian",
+    shift: 13,
+    plaintext: "MEASURE THE SHADOW AT HIGH NOON",
+    xp: 150,
+    hints: [
+      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
+      "The key sits almost exactly halfway through the alphabet — turn the wheel 13 steps.",
+    ],
+  },
+  {
+    id: "3",
+    title: "The Watchtower",
+    place: "Tower",
+    shift: 3,
+    plaintext: "LIGHT THE BEACON WHEN STARS ALIGN",
+    xp: 150,
+    hints: [
+      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
+      "The key is the smallest you have seen — the very start of the alphabet, what you would try first.",
+    ],
+  },
+  {
+    id: "4",
+    title: "The River Bank",
+    place: "River",
+    shift: 5,
+    plaintext: "THE KEY IS BURIED NEAR THE RIVER",
+    xp: 200,
+    hints: [
+      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
+      "Count the fingers on one hand — that small number is your key.",
+    ],
+  },
+  {
+    id: "5",
+    title: "The North Cave",
+    place: "Cave",
+    shift: 9,
+    plaintext: "FOLLOW THE NORTH STAR TO THE CAVE",
+    xp: 200,
+    hints: [
+      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
+      "The key is a single digit just under ten — one less than the number of fingers you have.",
+    ],
+  },
+  {
+    id: "6",
+    title: "The Sand Dunes",
+    place: "Desert",
+    shift: 11,
+    plaintext: "THE TREASURE SLEEPS UNDER THE SAND",
+    xp: 250,
+    hints: [
+      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
+      "Just past ten — a little over halfway through the first half of the alphabet.",
+    ],
+  },
+];
+
+/* -------------------------------------------------------------------------- */
 /*                               Cipher Engine                                */
 /* -------------------------------------------------------------------------- */
 
@@ -87,4 +176,60 @@ export function computeCiphertext(mission: Mission): string {
 /** Decodes a ciphertext back to plaintext. */
 export function decodeText(ciphertext: string, shift: number): string {
   return caesar(ciphertext, shift, false);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                             Scoring & Ranks                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Final score for one solved mission.
+ *
+ * Base mission XP, plus a speed bonus for every second under the 60 s cap
+ * (2 pts/sec, never negative), minus 10 pts for every attempt beyond the
+ * first, minus 15 pts per hint used. The result is clamped so a score can
+ * never drop below 0.
+ */
+export function scoreMission(
+  mission: Mission,
+  attempts: number,
+  hintsUsed: number,
+  timeSec: number,
+): number {
+  const time = Number.isFinite(timeSec) ? timeSec : Infinity;
+  const speedBonus = Math.max(0, SPEED_BONUS_CAP_SEC - time) * SPEED_PER_SEC;
+  const attemptPenalty = (attempts - 1) * ATTEMPT_PENALTY;
+  const hintPenalty = hintsUsed * HINT_SCORE_COST;
+
+  return Math.max(0, mission.xp + speedBonus - attemptPenalty - hintPenalty);
+}
+
+/** Title earned at a given XP total. */
+export function rankFor(xp: number): string {
+  if (xp >= 500) return "Master Cartographer";
+  if (xp >= 200) return "Journeyman Surveyor";
+  return "Novice Wanderer";
+}
+
+/**
+ * XP needed for the next rank, or 500 once the top rank is reached.
+ */
+export function nextRankThreshold(xp: number): number {
+  if (xp < 200) return 200;
+  return 500;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                             Level Unlocking                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A mission is unlocked at index 0, or when the mission immediately before
+ * it (by campaign order) has been completed.
+ */
+export function missionUnlocked(index: number, completed: string[]): boolean {
+  if (index <= 0) return true;
+
+  const previous = MISSIONS[index - 1];
+  return previous !== undefined && completed.includes(previous.id);
 }
