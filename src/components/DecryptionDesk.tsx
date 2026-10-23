@@ -11,8 +11,11 @@ import {
   CheckCircle2,
   Award,
   AlertCircle,
+  KeyRound,
+  RotateCcw,
+  Minus,
+  Plus,
 } from "lucide-react";
-import { CipherWheel } from "./CipherWheel";
 import { SECTOR_METAS } from "../data/lore";
 import {
   computeCiphertext,
@@ -23,12 +26,22 @@ import {
   type Progress,
 } from "../lib/game";
 import { getClue } from "../lib/ai";
+import {
+  playClick,
+  playHintSound,
+  playErrorSound,
+  playSuccessSound,
+} from "../lib/audio";
 
 interface DecryptionDeskProps {
   mission: Mission;
   sectorIndex: number;
   progress: Progress;
-  onSolve: (score: number, missionId: string) => void;
+  onSolve: (
+    score: number,
+    missionId: string,
+    stats?: { attempts: number; hintsUsed: number; timeSec: number }
+  ) => void;
   onUseHint: () => boolean;
   onNextSector: () => void;
   onReturnToMap: () => void;
@@ -75,8 +88,15 @@ export function DecryptionDesk({
     return str.trim().replace(/\s+/g, " ").toLowerCase();
   }
 
-  function handleCheckAnswer() {
+  function handleShiftChange(newShift: number) {
     if (solved) return;
+    const normalized = ((newShift % 26) + 26) % 26;
+    playClick();
+    setDialShift(normalized);
+  }
+
+  function handleCheckAnswer() {
+    if (solved || answer.trim() === "") return;
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
 
@@ -85,13 +105,19 @@ export function DecryptionDesk({
       setEarnedScore(finalScore);
       setSolved(true);
       setDialShift(mission.shift);
+      playSuccessSound();
       setFeedback({
         type: "success",
         text: `Decryption confirmed! Sovereign mandate approved (+${finalScore} XP).`,
       });
-      onSolve(finalScore, mission.id);
+      onSolve(finalScore, mission.id, {
+        attempts: nextAttempts,
+        hintsUsed,
+        timeSec: elapsedSec,
+      });
     } else {
       setShake(true);
+      playErrorSound();
       setTimeout(() => setShake(false), 500);
       setFeedback({
         type: "error",
@@ -111,12 +137,14 @@ export function DecryptionDesk({
     }
     const ok = onUseHint();
     if (!ok) {
+      playErrorSound();
       setFeedback({
         type: "error",
         text: "Insufficient ink reserves in Her Majesty's flask. Chart further sectors.",
       });
       return;
     }
+    playHintSound();
     const nextIndex = hintsUsed;
     const clueText = getClue(mission, nextIndex);
     setHintsUsed((v) => v + 1);
@@ -124,6 +152,7 @@ export function DecryptionDesk({
   }
 
   function handleFillFromSlate() {
+    playClick();
     setAnswer(liveTranslation);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
@@ -139,7 +168,7 @@ export function DecryptionDesk({
         <div className="flex items-center justify-between border-b-2 border-[#544127] bg-[#3a2c1a] px-4 py-1.5 text-[10px] tracking-[0.25em] text-[#d6c7a7] uppercase">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-gold" />
-            <span>Top Roll Navigational Ruler • Brass Clamped</span>
+            <span>Top Roll Navigational Ruler</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[#a8987b]">
@@ -156,7 +185,7 @@ export function DecryptionDesk({
                 Decryption Docket: {meta.docket}
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-wide text-[#231a10]">
-                Coded Dispatch • Sector {meta.roman}: {mission.title}
+                Coded Dispatch &bull; Sector {meta.roman}: {mission.title}
               </h2>
             </div>
             <div className="flex items-center gap-2 rounded border border-gold/70 bg-[#ede0c6] px-3 py-1.5 text-xs text-[#523e1f] shadow-inner">
@@ -169,7 +198,7 @@ export function DecryptionDesk({
 
           <div className="mt-6">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#635133]">
-              <span>Encrypted Signal (Stencils in Sepia Ink):</span>
+              <span>Encrypted Signal:</span>
               <span className="text-[#84714f]">Caesar Cipher Protocol</span>
             </div>
             <div className="cipher-text mt-2 rounded border border-ink/30 bg-[#efe4cd] p-4 text-center text-lg sm:text-xl font-bold text-[#2d2214] shadow-inner break-words">
@@ -177,18 +206,80 @@ export function DecryptionDesk({
             </div>
           </div>
 
-          <div className="mt-6">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#635133]">
-              <span>Transcribed Working Slate:</span>
+          {/* Manual Shift Controller */}
+          <div className="mt-6 rounded border border-gold/50 bg-[#f4ebd6] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ink/10 pb-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs italic text-[#7a6747] lowercase">
-                  live translation from wheel setting
+                <KeyRound className="h-4 w-4 text-gold" />
+                <span className="text-xs font-bold uppercase tracking-wider text-[#635133]">
+                  Manual Shift Offset Controller
                 </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleShiftChange(0)}
+                disabled={solved}
+                className="flex items-center gap-1 rounded border border-ink/20 bg-[#e8dbc0] px-2 py-0.5 text-xs font-semibold text-[#473822] hover:bg-[#dccdb0]"
+              >
+                <RotateCcw className="h-3 w-3 text-gold" />
+                <span>Reset (0)</span>
+              </button>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#6b5839]">Shift Key:</span>
+                <div className="flex items-center rounded border border-ink/30 bg-[#fcf9f2] overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => handleShiftChange(dialShift - 1)}
+                    disabled={solved}
+                    className="h-9 w-9 flex items-center justify-center bg-[#ece0c9] hover:bg-[#dfd1b5]"
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="number"
+                    min={0}
+                    max={25}
+                    value={dialShift}
+                    disabled={solved}
+                    onChange={(e) => handleShiftChange(parseInt(e.target.value, 10) || 0)}
+                    className="h-9 w-14 text-center font-display text-base font-bold text-wax bg-transparent focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleShiftChange(dialShift + 1)}
+                    disabled={solved}
+                    className="h-9 w-9 flex items-center justify-center bg-[#ece0c9] hover:bg-[#dfd1b5]"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-1 min-w-[180px]">
+                <span className="text-[10px] text-[#78674d]">0</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={25}
+                  value={dialShift}
+                  disabled={solved}
+                  onChange={(e) => handleShiftChange(parseInt(e.target.value, 10))}
+                  className="w-full h-2 bg-[#dfceb0] rounded-lg cursor-pointer accent-wax"
+                />
+                <span className="text-[10px] text-[#78674d]">25</span>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-ink/10">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#635133]">
+                <span>Transcribed Working Slate (Shift +{dialShift}):</span>
                 <button
                   type="button"
                   onClick={handleFillFromSlate}
-                  className="flex items-center gap-1 rounded border border-ink/20 bg-[#e7d8bb] px-2 py-0.5 text-[11px] font-semibold text-[#453621] hover:bg-[#d9c8a7] active:scale-95 transition-all"
-                  title="Copy working slate to answer"
+                  className="flex items-center gap-1 rounded border border-ink/20 bg-[#e7d8bb] px-2 py-0.5 text-[11px] font-semibold text-[#453621] hover:bg-[#d9c8a7]"
                 >
                   {copied ? (
                     <>
@@ -201,64 +292,36 @@ export function DecryptionDesk({
                   )}
                 </button>
               </div>
+              <div className="cipher-text mt-2 min-h-16 rounded border-2 border-gold/40 bg-[#ded0b6] p-3 text-center text-lg sm:text-xl font-bold text-wax shadow-inner break-words">
+                {liveTranslation}
+              </div>
             </div>
-            <div className="cipher-text mt-2 min-h-20 rounded border-2 border-gold/40 bg-[#ded0b6] p-4 text-center text-lg sm:text-xl font-bold text-wax shadow-inner break-words">
-              {liveTranslation}
-            </div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-[#715f43]">
-              <span>Transcribed Length: {ciphertext.length} Runes</span>
-              <span className="font-bold text-ink">
-                Wheel Offset: +{dialShift}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between border-t-2 border-[#544127] bg-[#3a2c1a] px-4 py-1.5 text-[10px] tracking-[0.25em] text-[#d6c7a7] uppercase">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-gold" />
-            <span>Weighted Keel Runner • Sealed Papyrus Roll</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>Coordinate: {meta.coords}</span>
-            <span className="h-2 w-2 rounded-full bg-gold" />
           </div>
         </div>
       </motion.div>
 
-      <div className="mt-8">
-        <CipherWheel
-          shift={dialShift}
-          onShiftChange={setDialShift}
-          targetShift={mission.shift}
-          solved={solved}
-        />
-      </div>
-
-      <div className="mt-8 rounded border border-gold/50 bg-[#f9f2e3] p-6 shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/15 pb-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#695431]">
-            Official Imperial Transcription
-          </span>
-          <span className="text-xs text-[#7e6c4e] italic">
-            Verify shift alignment before submitting to Her Majesty&apos;s records
-          </span>
-        </div>
+      {/* Manual Plaintext Answer & Submission Form */}
+      <div className="mt-6 rounded border border-gold/50 bg-[#f9f2e3] p-6 shadow-lg">
+        <label
+          htmlFor="desk-answer-input"
+          className="block text-xs font-bold uppercase tracking-wider text-[#695431] border-b border-ink/15 pb-2"
+        >
+          Plaintext Decryption Submission
+        </label>
 
         <div className="mt-4 flex flex-col gap-4">
-          <div className="relative">
-            <input
-              type="text"
-              value={answer}
-              disabled={solved}
-              onChange={(e) => setAnswer(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleCheckAnswer();
-              }}
-              placeholder="Enter plaintext transcription..."
-              className="w-full rounded border-2 border-ink/30 bg-[#fefcf8] px-4 py-3 font-display text-base sm:text-lg font-bold tracking-wider text-ink shadow-inner focus:border-wax focus:outline-none focus:ring-2 focus:ring-wax/30 disabled:bg-[#eee3ce]"
-            />
-          </div>
+          <input
+            id="desk-answer-input"
+            type="text"
+            value={answer}
+            disabled={solved}
+            onChange={(e) => setAnswer(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCheckAnswer();
+            }}
+            placeholder="Enter plaintext transcription..."
+            className="w-full rounded border-2 border-ink/30 bg-[#fefcf8] px-4 py-3 font-display text-base sm:text-lg font-bold tracking-wider text-ink shadow-inner focus:border-wax focus:outline-none focus:ring-2 focus:ring-wax/30 disabled:bg-[#eee3ce]"
+          />
 
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <motion.button
@@ -270,7 +333,7 @@ export function DecryptionDesk({
               className="flex items-center justify-center gap-2 rounded border border-[#591b17] bg-gradient-to-b from-[#b24c45] via-wax to-[#742b26] px-6 py-3.5 text-base font-bold uppercase tracking-widest text-[#fbf5e8] shadow-lg hover:brightness-105 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
             >
               <ShieldCheck className="h-5 w-5" />
-              Check My Answer
+              <span>Submit Decryption</span>
             </motion.button>
 
             <button
@@ -281,7 +344,7 @@ export function DecryptionDesk({
             >
               <div className="flex items-center gap-1.5">
                 <Droplets className="h-4 w-4 text-[#4f8fa7]" />
-                <span>Buy Hint (-1 Ink: Reveal Clue)</span>
+                <span>Buy Hint (-1 Ink)</span>
               </div>
               <span className="rounded bg-[#281f13] px-2 py-0.5 text-[11px] font-bold text-gold">
                 {progress.ink} Left
@@ -293,6 +356,8 @@ export function DecryptionDesk({
             <motion.div
               initial={reducedMotion ? false : { opacity: 0, y: -4 }}
               animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+              role="status"
+              aria-live="polite"
               className={`flex items-center gap-2 rounded p-3 text-xs font-bold tracking-wide ${
                 feedback.type === "success"
                   ? "border border-wax/40 bg-wax/10 text-wax"

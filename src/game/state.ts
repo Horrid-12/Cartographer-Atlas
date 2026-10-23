@@ -12,7 +12,11 @@ function isProgress(value: unknown): value is Progress {
   const v = value as Record<string, unknown>;
   return (
     typeof v.xp === "number" &&
+    Number.isFinite(v.xp) &&
+    v.xp >= 0 &&
     typeof v.ink === "number" &&
+    Number.isFinite(v.ink) &&
+    v.ink >= 0 &&
     Array.isArray(v.completed) &&
     v.completed.every((item) => typeof item === "string") &&
     (v.activeMission === null || typeof v.activeMission === "string")
@@ -35,10 +39,12 @@ export function loadProgress(): Progress {
     if (raw === null) return { ...DEFAULT_PROGRESS };
     const parsed = JSON.parse(raw) as unknown;
     if (!isProgress(parsed)) return { ...DEFAULT_PROGRESS };
+    // Deduplicate completed array for safety
+    const uniqueCompleted = Array.from(new Set(parsed.completed));
     return {
-      xp: parsed.xp,
-      ink: parsed.ink,
-      completed: [...parsed.completed],
+      xp: Math.max(0, Math.floor(parsed.xp)),
+      ink: Math.max(0, Math.floor(parsed.ink)),
+      completed: uniqueCompleted,
       activeMission: parsed.activeMission,
     };
   } catch {
