@@ -6,16 +6,11 @@
 
 | # | Prompt Summary | Tool Used | What It Built / Solved |
 |---|----------------|-----------|------------------------|
-| 1 | "Act as a Senior TypeScript Developer… We are starting Phase 2: Game Engine. Create src/lib/game.ts — pure TypeScript logic, no React code yet." | OpenCode (GLM-5.3-Flash) | Skeleton for the engine module with separate types / constants / cipher sections, written strict-mode-safe |
-| 2 | "Task 1: Define Interfaces — Mission (id, title, place, shift, plaintext, xp, hints) and Progress (xp, ink, completed, activeMission)." | OpenCode (GLM-5.3-Flash) | Exported `Mission` and `Progress` interfaces that the rest of Phase 2 will build on |
-| 3 | "Task 2: Define Constants — START_INK=5, INK_REWARD=2, HINT_INK_COST=1, HINT_SCORE_COST=15, SPEED_BONUS_CAP_SEC=60, SPEED_PER_SEC=2, ATTEMPT_PENALTY=10, PERSISTENCE_KEY='atlas-progress-v1'." | OpenCode (GLM-5.3-Flash) | Eight exact exported constants for the ink economy, speed bonus and persistence key |
-| 4 | "Task 3: The Cipher Engine — pure caesar(text, shift, forward) that preserves casing, ignores punctuation/digits, wraps shifts with modulo 26; plus computeCiphertext() and decodeText() helpers." | OpenCode (GLM-5.3-Flash) | Working Caesar engine; verified via tsc --strict and a Node assertion suite (A→D examples, casing/punctuation, wraparound at 25/26/52/−3, decode(cipher(x)) round-trips) |
-| 5 | "The GitHub repo (Horrid-12/Cartographer-Atlas) is where you push and pull the updates." | OpenCode (GLM-5.3-Flash) | Cloned the repo into the workspace; committed src/lib/game.ts (d364206) and pushed to origin/main, then fetched to confirm sync |
-| 6 | "Done — fill in the AI_Log entry." | OpenCode (GLM-5.3-Flash) | This file: real prompts, tools and the npx mistake below recorded for Phase 2 |
-| 7 | "Resume and wire the UI: StatusBar, MissionBoard, MissionPanel, App orchestration, localStorage state module." | OpenCode (beam-free) | Added src/game/state.ts (+ tests), three components, rewrote App.tsx; build and 8 tests pass |
-| 8 | "Proceed with Phase 3 UI: World Map, Decryption Desk, Concentric Astronomical Cipher Wheel, Expedition Journal, and Archive of Curiosities matching the reference designs." | Antigravity (Gemini 3.8) | Implemented full WorldMap canvas, interactive animated CipherWheel with gear controls and live working slate, DecryptionDesk, ExpeditionJournal, ArchiveCuriosities, and TopNav ribbon; all 11 unit tests and production build pass |
-| 9 | | | |
-| 10 | | | |
+| 1 | **Phase 1 — Project Foundation & Design System:** Scaffold the repository with React 18, Vite, TypeScript, and Tailwind CSS v4 (`@theme`). Implement antique cartography theme tokens (parchment, ink, wax, gold), SVG turbulence noise texture, and reusable `Button` and `Card` UI primitives via CVA. | Antigravity (Gemini 3.8 Flash) | Built modern frontend scaffolding, Tailwind v4 CSS-first theming in `src/index.css`, CVA component primitives, Vitest setup, and foundation preview. |
+| 2 | **Phase 2 — Game Engine & Cipher Logic:** Implement pure TypeScript game engine without React dependencies. Define `Mission` and `Progress` interfaces, scoring/economy constants, pure Caesar cipher algorithm preserving casing/punctuation with modulo-26 wrap, rank progression, and corruption-safe localStorage persistence. | OpenCode (GLM-5.3-Flash / beam-free) | Delivered `src/lib/game.ts` and `src/game/state.ts`: Caesar cipher codec, `scoreMission()` formula, rank threshold logic (Novice → Journeyman → Master), and defensive localStorage handling with unit tests. |
+| 3 | **Phase 3 — Cartographic World Map & Decryption Desk:** Implement interactive parchment World Map canvas with SVG routes and voyage pins, Decryption Desk, concentric astronomical cipher dial, Expedition Journal, Archive of Curiosities, and TopNav HUD ribbon matching design references. | Antigravity (Gemini 3.8 Flash) | Created `WorldMap.tsx`, `DecryptionDesk.tsx`, `CipherWheel.tsx`, `ExpeditionJournal.tsx`, `ArchiveCuriosities.tsx`, and `TopNav.tsx` with parchment aesthetics and status tracking. |
+| 4 | **Phase 5 — Victory Overlay & Progression Integration:** Build final victory sequence with animated wax seal, decrypted message reveal, animated XP/Ink count-up using `scoreMission()`, rank-up notifications, sequence unlocking across all 3 missions, and replay anti-duplication guards. | Antigravity (Gemini 3.8 Flash) | Created `VictoryOverlay.tsx` with Framer Motion staggered transitions, exact score breakdowns, persistent rank promotion moments, and replay reward protection. |
+| 5 | **Phase 6 — Polish, Audio, Input Simplification & Final Verification:** Final polish and regression testing: simplify cipher interaction by replacing the complex wheel with direct manual shift hint controllers and answer input, integrate local background music and victory sound effects with mute toggle, ensure responsive mobile/desktop layouts, and execute full test suite. | Antigravity (Gemini 3.8 Flash) | Integrated `src/lib/audio.ts` (Web Audio API & bundled audio tracks), refined `MissionPanel.tsx` and `DecryptionDesk.tsx` for accessible manual shift hints and input, hardened ink economy, and validated all 24 Vitest tests and production build. |
 
 ## 2. Tools Used
 
@@ -23,11 +18,11 @@
 
 | Tool | Used For |
 |------|----------|
-| OpenCode — GLM-5.3-Flash | Main AI agent: implemented src/lib/game.ts, designed and ran the verification suite, committed/pushed, and filled this log |
-| Git 2.55 (Git for Windows) | Cloned Cartographer-Atlas into the workspace; staged, committed (d364206) and pushed src/lib/game.ts to origin/main; fetch + `git status -sb` to confirm sync |
-| TypeScript 5 via `npx -p typescript@5 tsc` | `--noEmit --strict --target ES2020` typecheck of game.ts; second pass emitted CommonJS output so the engine could be unit-tested at runtime |
-| Node.js 24 + `node:assert/strict` | Executed cipher assertions: spec examples, case/punctuation preservation, modulo wraparound (25/26/27/52, negatives) and codec round-trips over 10 shift values |
-| Antigravity — Gemini 3.8 | Implemented Phase 3 UI polish: World Map, Decryption Desk, Concentric Astronomical Cipher Wheel, TopNav, Expedition Journal, Archive of Curiosities; verified test suite and build |
+| **Antigravity (Gemini 3.8 Flash / Claude)** | Frontend architecture, UI/UX implementation across Phases 1, 3, 5, and 6: Tailwind v4 theme, interactive World Map, Decryption Desk, Victory sequence animations, audio engine integration, and responsive layout polish. |
+| **OpenCode (GLM-5.3-Flash / beam-free)** | Core algorithmic game engine in Phase 2: pure TypeScript Caesar cipher encode/decode, scoring/penalty formulas, rank transition thresholds, and localStorage persistence module. |
+| **TypeScript 5 (`tsc -b`) & Vite** | Static type checking in strict mode, module bundling with `@tailwindcss/vite` plugin, and production build verification. |
+| **Vitest & Node.js Assert** | Automated test runner: validated cipher modulo wraparounds, case/punctuation preservation, score calculation, corruption-safe storage recovery, and victory state triggers (24 tests passing). |
+| **Git & GitHub (`Horrid-12/Cartographer-Atlas`)** | Source control, incremental commit staging across development phases, branch synchronization, and collaborative tracking between AI tools. |
 
 ## 3. One Time AI Got It Wrong
 
@@ -35,12 +30,12 @@
 
 **What happened:**
 
-While setting up verification for the cipher engine, my first attempt to run the TypeScript compiler was `npx --yes typescript@5 --version`. It failed immediately with `npm error could not determine executable to run`. I had assumed npx would resolve the compiler binary automatically, but the `typescript` package ships two executables (`tsc` and `tsserver`) and none of them is named `typescript`, so npx had no default binary to forward my arguments to. The failure was an invalid CLI invocation on my side — the engine code itself was untouched and untested at that point.
+While setting up verification for the cipher engine in Phase 2, the agent attempted to execute `npx --yes typescript@5 --version`. This failed immediately with `npm error could not determine executable to run`. The agent assumed `npx` would automatically detect and run the TypeScript compiler binary, but the `typescript` npm package exports binaries named `tsc` and `tsserver` rather than `typescript`. Because no binary matched the package name directly, `npx` halted before running any type checking or tests.
 
 **How you caught it:**
 
-I read the actual npm error (`could not determine executable to run`) and the npm debug log it referenced instead of retrying blindly, recognized it as a package/binary-resolution problem rather than a code error, and switched the invocation. To make sure the engine was genuinely sound once the correct command ran, I verified it two independent ways: a compile-only pass (`tsc --noEmit --strict --target ES2020`) and a compiled-to-JS assertion suite under Node that tests the spec examples, casing/punctuation preservation, modulo wraparound and `decode(cipher(x))` round-trips — it printed "All cipher engine checks passed."
+Rather than re-running the failed command blindly, the agent inspected the npm error log (`could not determine executable to run`), identifying that the issue was an npm executable resolution error rather than a syntax or engine defect. To verify the cipher engine independently, the suite was tested via both static typecheck and a Node.js runtime assertion script covering Caesar shift modulo arithmetic, punctuation preservation, negative offsets, and roundtrip codec integrity.
 
 **What changed:**
 
-Switched to the explicit form `npx --yes -p typescript@5 tsc <flags>`, where `-p` installs the package and `tsc` names the executable. That command typechecked the file cleanly and let the runtime test suite execute. A secondary lesson from the same session: in PowerShell, git operations report success through stderr (clone/push showed up as "errors" with non-zero exit codes even when they succeeded), so pipeline failures should be confirmed against repository state (`git status`, `git log`, fetch-and-compare with origin) before concluding anything actually failed.
+Switched the invocation to the explicit package-and-binary flag format: `npx --yes -p typescript@5 tsc <flags>`, where `-p` specifies the package and `tsc` specifies the binary executable. In subsequent phases, permanent test and build scripts were defined in `package.json` (`npm run build` using `tsc -b && vite build` and `npm run test` using `vitest run`) so all agents and contributors could run consistent, verified one-line commands.
