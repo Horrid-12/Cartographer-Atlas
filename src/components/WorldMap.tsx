@@ -69,7 +69,7 @@ export function WorldMap({
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-64px)] w-full overflow-hidden bg-[#e8dbc2] text-ink select-none font-display flex flex-col justify-between">
+    <div className="relative min-h-[calc(100vh-96px)] lg:min-h-[calc(100vh-64px)] w-full overflow-hidden bg-[#e8dbc2] text-ink select-none font-display flex flex-col justify-between">
       {/* Parchment background with grid */}
       <div
         className={`absolute inset-0 parchment ${
@@ -225,18 +225,27 @@ export function WorldMap({
                 </p>
               </div>
 
-              <div className="mt-3 flex items-center justify-between border-t border-ink/10 pt-2 text-[11px] text-[#55462f]">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-ink/10 pt-2 text-[11px] text-[#55462f]">
                 <div className="flex items-center gap-1.5">
+                  {isSelectedCompleted ? (
+                    <CheckCircle2
+                      className="h-4 w-4 shrink-0 text-wax"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Clock
+                      className="h-4 w-4 shrink-0 text-[#8a7654]"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="font-semibold">{activeMeta.task}</span>
                   <span
-                    className={`flex h-4 w-4 items-center justify-center rounded border ${
-                      isSelectedCompleted
-                        ? "border-wax bg-wax text-parchment"
-                        : "border-ink/40 bg-parchment"
+                    className={`text-[10px] font-bold uppercase tracking-wider ${
+                      isSelectedCompleted ? "text-wax" : "text-[#8a7654]"
                     }`}
                   >
-                    {isSelectedCompleted ? <CheckCircle2 className="h-3 w-3" /> : null}
+                    &middot; {isSelectedCompleted ? "Done" : "Pending"}
                   </span>
-                  <span className="font-semibold">{activeMeta.task}</span>
                 </div>
                 <div className="flex items-center gap-1 text-[#6b5839]">
                   <Droplets className="h-3.5 w-3.5 text-[#528ea5]" />
@@ -404,14 +413,6 @@ export function WorldMap({
           </div>
         </div>
       </div>
-
-      {/* Clean Bottom Sovereign Society Footer Bar */}
-      <footer className="relative z-30 border-t border-ink/30 bg-[#1e170e] px-4 py-2 text-[10px] font-display text-[#aa9a7c]">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
-          <span>ANNO DOMINI MDCCCLXXXVII &bull; HER MAJESTY&apos;S GEOGRAPHICAL SOCIETY</span>
-          <span>&copy; The Cartographer&apos;s Atlas &bull; Field Coordinates Secured</span>
-        </div>
-      </footer>
     </div>
   );
 }

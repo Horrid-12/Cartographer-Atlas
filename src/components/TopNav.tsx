@@ -45,68 +45,65 @@ export function TopNav({
   return (
     <header className="sticky top-0 z-40 w-full border-b border-ink/40 bg-[#1e1810] text-[#f2e8d5] shadow-lg select-none">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2 sm:px-6">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gold/70 bg-[#2a2215] shadow-inner">
+        {/* The atlas itself is the way back to the map */}
+        <button
+          type="button"
+          onClick={() => handleTabClick("map")}
+          title="The Cartographer's Atlas — World Map"
+          aria-label="The Cartographer's Atlas — World Map"
+          aria-current={currentTab === "map" ? "page" : undefined}
+          className="group flex shrink-0 cursor-pointer items-center gap-2.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-[#2c2317]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 active:scale-[0.99] sm:gap-3"
+        >
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gold/70 bg-[#2a2215] shadow-inner transition-colors group-hover:border-gold">
             <Compass className="h-5 w-5 sm:h-6 sm:w-6 text-gold animate-[spin_60s_linear_infinite]" />
           </div>
           <div className="leading-tight">
-            <span className="block font-display text-[10px] sm:text-xs tracking-[0.2em] text-[#d6c7a7]">
+            <span className="hidden sm:block font-display text-[10px] sm:text-xs tracking-[0.2em] text-[#d6c7a7] transition-colors group-hover:text-[#e8dac0]">
               THE CARTOGRAPHER&apos;S
             </span>
-            <span className="block font-display text-lg sm:text-xl font-bold tracking-[0.15em] text-[#f8edd9]">
+            <span className="block font-display text-lg sm:text-xl font-bold tracking-[0.15em] text-[#f8edd9] transition-colors group-hover:text-parchment">
               ATLAS
             </span>
           </div>
-        </div>
+        </button>
 
-        <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-1 text-xs font-display tracking-widest">
-          <button
-            type="button"
-            onClick={() => handleTabClick("map")}
-            className={`min-h-[38px] px-4 py-2 uppercase transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
-              currentTab === "map"
-                ? "bg-[#796120] text-parchment font-bold shadow-md ring-1 ring-gold/40"
-                : "text-[#d6c7a7] hover:bg-[#2c2317] hover:text-parchment"
-            }`}
-          >
-            World Map
-          </button>
+        <nav aria-label="Main Navigation" className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto no-scrollbar px-2 xl:gap-1 text-[11px] xl:text-xs font-display tracking-widest">
           <button
             type="button"
             onClick={() => handleTabClick("desk")}
-            className={`min-h-[38px] px-4 py-2 uppercase transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
+            className={`min-h-[38px] shrink-0 whitespace-nowrap px-2.5 py-2 uppercase transition-all duration-150 xl:px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
               currentTab === "desk"
                 ? "bg-[#796120] text-parchment font-bold shadow-md ring-1 ring-gold/40"
                 : "text-[#d6c7a7] hover:bg-[#2c2317] hover:text-parchment"
             }`}
           >
-            Decryption Desk
+            Desk
           </button>
           <button
             type="button"
             onClick={() => handleTabClick("journal")}
-            className={`min-h-[38px] px-4 py-2 uppercase transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
+            className={`min-h-[38px] shrink-0 whitespace-nowrap px-2.5 py-2 uppercase transition-all duration-150 xl:px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
               currentTab === "journal"
                 ? "bg-[#796120] text-parchment font-bold shadow-md ring-1 ring-gold/40"
                 : "text-[#d6c7a7] hover:bg-[#2c2317] hover:text-parchment"
             }`}
           >
-            Expedition Journal
+            Journal
           </button>
           <button
             type="button"
             onClick={() => handleTabClick("archive")}
-            className={`min-h-[38px] px-4 py-2 uppercase transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
+            className={`min-h-[38px] shrink-0 whitespace-nowrap px-2.5 py-2 uppercase transition-all duration-150 xl:px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
               currentTab === "archive"
                 ? "bg-[#796120] text-parchment font-bold shadow-md ring-1 ring-gold/40"
                 : "text-[#d6c7a7] hover:bg-[#2c2317] hover:text-parchment"
             }`}
           >
-            Archive of Curiosities
+            Archive
           </button>
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {/* Audio Mute/Unmute Toggle Button */}
           <button
             type="button"
@@ -123,47 +120,30 @@ export function TopNav({
           </button>
 
           {/* Player Progress Stats */}
-          <div className="flex items-center gap-2 sm:gap-3 rounded border border-gold/40 bg-[#292116] px-2.5 sm:px-3.5 py-1 sm:py-1.5 font-display text-xs text-[#f2e8d5] shadow-inner">
+          <div className="flex items-center gap-2 sm:gap-3 rounded border border-gold/40 bg-[#292116] px-2 sm:px-3.5 py-1 sm:py-1.5 font-display text-xs text-[#f2e8d5] shadow-inner whitespace-nowrap">
             <div className="flex items-center gap-1">
               <span className="text-[#a59477] text-[10px] sm:text-xs">XP:</span>
               <span className="font-bold text-gold">{progress.xp}</span>
             </div>
-            <span className="text-gold/40">|</span>
-            <div className="flex items-center gap-1">
+            <span className="hidden sm:inline text-gold/40">|</span>
+            <div className="hidden sm:flex items-center gap-1">
               <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gold shrink-0" />
-              <span className="hidden sm:inline font-semibold tracking-wider uppercase text-[#e8dac0]">
+              <span className="font-semibold tracking-wider uppercase text-[#e8dac0]">
                 {rank}
               </span>
             </div>
             <span className="text-gold/40">|</span>
             <div className="flex items-center gap-1">
               <Droplets className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#6ba4b8] shrink-0" />
-              <span className="text-[#a59477] text-[10px] sm:text-xs">INK:</span>
+              <span className="hidden sm:inline text-[#a59477] text-[10px] sm:text-xs">INK:</span>
               <span className="font-bold text-[#e6f4f8]">{progress.ink}</span>
-            </div>
-          </div>
-
-          <div
-            title="Archibald Sterling, Royal Cartographic Surveyor"
-            aria-label="Surveyor seal Archibald Sterling"
-            className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full border border-gold/60 bg-[#382b1b] p-0.5 shadow-md"
-          >
-            <div className="flex h-full w-full items-center justify-center rounded-full bg-wax text-parchment text-xs font-bold shadow-inner">
-              AS
             </div>
           </div>
         </div>
       </div>
 
       {/* Mobile navigation tab bar */}
-      <nav aria-label="Mobile Navigation" className="flex md:hidden border-t border-ink/40 bg-[#16120b] px-2 py-1 justify-around text-xs font-display uppercase tracking-wider text-[#d6c7a7]">
-        <button
-          type="button"
-          onClick={() => handleTabClick("map")}
-          className={`min-h-[36px] px-2.5 py-1.5 rounded focus-visible:ring-1 focus-visible:ring-gold ${currentTab === "map" ? "bg-[#796120] text-parchment font-bold" : ""}`}
-        >
-          Map
-        </button>
+      <nav aria-label="Mobile Navigation" className="flex lg:hidden border-t border-ink/40 bg-[#16120b] px-2 py-1 justify-around text-xs font-display uppercase tracking-wider text-[#d6c7a7]">
         <button
           type="button"
           onClick={() => handleTabClick("desk")}
