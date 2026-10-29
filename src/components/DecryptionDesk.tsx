@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Minus,
   Plus,
+  Lightbulb,
 } from "lucide-react";
 import { SECTOR_METAS } from "../data/lore";
 import {
@@ -225,6 +226,17 @@ export function DecryptionDesk({
                   <RotateCcw className="h-3 w-3 text-gold" />
                   <span>Reset (0)</span>
                 </button>
+              </div>
+
+              {/* Archival Decryption Hint */}
+              <div className="mt-3 rounded border-l-4 border-gold bg-[#efe4cd] p-3 text-[#3b2d18] shadow-inner">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#735d33] mb-1">
+                  <Lightbulb className="h-3.5 w-3.5 text-gold shrink-0" />
+                  <span>Cartographer&apos;s Field Clue:</span>
+                </div>
+                <p className="italic leading-relaxed text-xs sm:text-sm text-[#473620]">
+                  &ldquo;{mission.hints[mission.hints.length - 1] ?? mission.hints[0]}&rdquo;
+                </p>
               </div>
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-4">

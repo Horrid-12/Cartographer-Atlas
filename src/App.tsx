@@ -163,18 +163,16 @@ export default function App() {
   }
 
   function handleUseHint(): boolean {
-    let success = false;
-    setProgress((previous) => {
-      if (previous.ink < 1) return previous;
-      success = true;
-      const next: Progress = {
-        ...previous,
-        ink: Math.max(0, previous.ink - 1),
-      };
-      saveProgress(next);
-      return next;
-    });
-    return success;
+    if (progress.ink < 1) {
+      return false;
+    }
+    const next: Progress = {
+      ...progress,
+      ink: Math.max(0, progress.ink - 1),
+    };
+    setProgress(next);
+    saveProgress(next);
+    return true;
   }
 
   function selectMission(index: number) {

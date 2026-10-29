@@ -15,6 +15,7 @@ import {
   stopBackgroundMusic,
 } from "../lib/audio";
 import { VictoryOverlay } from "./VictoryOverlay";
+import { MissionPanel } from "./MissionPanel";
 
 function makeStorage(): Storage {
   const store = new Map<string, string>();
@@ -104,6 +105,21 @@ describe("Audio Engine & Progressive Shift Hints", () => {
 
       expect(html).toContain("All Seals Broken");
       expect(html).toContain("All Royal Seals Restored");
+    });
+  });
+
+  describe("MissionPanel hint rendering", () => {
+    it("renders Archival Clue Locked initially", () => {
+      const mission1 = MISSIONS[0];
+      const html = renderToString(
+        <MissionPanel
+          mission={mission1}
+          ink={1}
+          onSolve={vi.fn()}
+          onUseHint={() => true}
+        />
+      );
+      expect(html).toContain("Archival Clue Locked");
     });
   });
 });
