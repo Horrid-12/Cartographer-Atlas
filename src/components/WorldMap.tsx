@@ -28,6 +28,46 @@ interface WorldMapProps {
   onEnterDesk: () => void;
 }
 
+/**
+ * Calculates curved cartographic nautical voyage arcs between consecutive sectors.
+ * Each leg follows a tailored natural curve navigating regional coastlines, channels, and sounds.
+ */
+function getSectorPath(
+  index: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+): string {
+  switch (index) {
+    case 0:
+      // Sector I (Old Bridge) -> Sector II (Sun Clock): Arcing northwest along the mountain ridge
+      return `M ${x1} ${y1} Q 170 220 ${x2} ${y2}`;
+    case 1:
+      // Sector II (Sun Clock) -> Sector III (Watchtower): Dipping south into the coastal sea channel
+      return `M ${x1} ${y1} Q 410 230 ${x2} ${y2}`;
+    case 2:
+      // Sector III (Watchtower) -> Sector IV (River Bank): Sweeping nautical S-curve across the Azure Sound
+      return `M ${x1} ${y1} C 570 250, 540 430 ${x2} ${y2}`;
+    case 3:
+      // Sector IV (River Bank) -> Sector V (North Cave): Meandering northeast voyage across the central gulf
+      return `M ${x1} ${y1} C 490 560, 660 380 ${x2} ${y2}`;
+    case 4:
+      // Sector V (North Cave) -> Sector VI (Sand Dunes): Sweeping coastal curve down to the arid wastes
+      return `M ${x1} ${y1} Q 850 310 ${x2} ${y2}`;
+    default: {
+      // Dynamic fallback for any additional sectors: smooth perpendicular arc
+      const mx = (x1 + x2) / 2;
+      const my = (y1 + y2) / 2;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const cx = mx - dy * 0.18;
+      const cy = my + dx * 0.18;
+      return `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+    }
+  }
+}
+
 export function WorldMap({
   progress,
   activeSectorIndex,
@@ -92,92 +132,20 @@ export function WorldMap({
             <span>42°10&apos;N</span>
           </div>
           <div className="flex flex-col justify-between h-full py-8">
-            <span>84°E</span>
-            <span>80°E</span>
-            <span>78°E</span>
+            <span>42°30&apos;N</span>
+            <span>42°20&apos;N</span>
+            <span>42°10&apos;N</span>
           </div>
         </div>
         <div className="flex justify-between text-[9px] sm:text-[10px] tracking-wider text-[#635339]/80 px-2">
-          <span>42°05&apos;N</span>
-          <span>42°15&apos;N</span>
-          <span>42°25&apos;N</span>
-          <span>42°35&apos;N</span>
+          <span>09°45&apos;W</span>
+          <span>09°35&apos;W</span>
+          <span>09°25&apos;W</span>
+          <span>09°15&apos;W</span>
         </div>
       </div>
 
-      {/* SVG Map Continents and Routes */}
-      <svg
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-60"
-        viewBox="0 0 1000 700"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M 120 180 Q 200 130 350 200 T 500 240 T 420 450 T 250 500 T 130 380 Z"
-          fill="#ddcca9"
-          stroke="#baa883"
-          strokeWidth="1.5"
-        />
-        <path
-          d="M 520 280 Q 640 220 780 270 T 820 480 T 680 560 T 520 480 Z"
-          fill="#dac7a3"
-          stroke="#baa883"
-          strokeWidth="1.5"
-        />
-        <path
-          d="M 380 90 Q 480 70 560 120 T 480 200 T 360 140 Z"
-          fill="#d8c5a0"
-          stroke="#baa883"
-          strokeWidth="1"
-        />
 
-        {/* Chained Mission Nautical Routes */}
-        <line
-          x1="200"
-          y1="322"
-          x2="380"
-          y2="273"
-          stroke="#97403a"
-          strokeWidth="2.5"
-          strokeDasharray="6 6"
-        />
-        <line
-          x1="380"
-          y1="273"
-          x2="620"
-          y2="336"
-          stroke="#97403a"
-          strokeWidth="2"
-          strokeDasharray="5 5"
-        />
-        <line
-          x1="380"
-          y1="273"
-          x2="450"
-          y2="378"
-          stroke="#7a674e"
-          strokeWidth="1.8"
-          strokeDasharray="4 4"
-        />
-        <line
-          x1="450"
-          y1="378"
-          x2="450"
-          y2="203"
-          stroke="#7a674e"
-          strokeWidth="1.5"
-          strokeDasharray="4 4"
-        />
-        <line
-          x1="450"
-          y1="378"
-          x2="550"
-          y2="448"
-          stroke="#7a674e"
-          strokeWidth="1.5"
-          strokeDasharray="4 4"
-        />
-      </svg>
 
       {/* Top Section: Title & Top-Right Expedition Orders Box */}
       <div className="relative z-20 w-full px-4 pt-4 sm:pt-6">
@@ -263,8 +231,235 @@ export function WorldMap({
       </div>
 
       {/* Main Map Interactive Canvas with Sector Seals */}
-      <div className="relative z-20 mx-auto w-full max-w-6xl px-4 my-auto py-4">
-        <div className="relative h-[360px] sm:h-[420px] w-full">
+      <div className="relative z-20 mx-auto w-full max-w-7xl px-4 sm:px-6 my-auto py-2 sm:py-4 flex-1 flex items-center justify-center">
+        <div className="relative h-[480px] sm:h-[540px] md:h-[580px] lg:h-[620px] w-full">
+          {/* Cartographic Geography & Nautical Routes Canvas */}
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full select-none"
+            viewBox="0 0 1000 700"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            {/* Subtle sea depth contours / parchment ocean glow */}
+            <defs>
+              <radialGradient id="oceanShine" cx="50%" cy="50%" r="65%">
+                <stop offset="0%" stopColor="#ede1c9" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#dfceac" stopOpacity="0.2" />
+              </radialGradient>
+            </defs>
+            <rect width="1000" height="700" fill="url(#oceanShine)" />
+
+            {/* Nautical Compass Navigation Rays (Rhumb Lines) */}
+            <g stroke="#b09f7a" strokeWidth="0.7" strokeDasharray="3 9" opacity="0.35">
+              <line x1="500" y1="350" x2="0" y2="0" />
+              <line x1="500" y1="350" x2="1000" y2="0" />
+              <line x1="500" y1="350" x2="0" y2="700" />
+              <line x1="500" y1="350" x2="1000" y2="700" />
+              <line x1="500" y1="350" x2="500" y2="0" />
+              <line x1="500" y1="350" x2="500" y2="700" />
+              <line x1="500" y1="350" x2="0" y2="350" />
+              <line x1="500" y1="350" x2="1000" y2="350" />
+              <circle cx="500" cy="350" r="180" fill="none" strokeWidth="0.8" strokeDasharray="4 8" />
+            </g>
+
+            {/* Continent 1: Western Realm (Sectors I, II, IV) */}
+            <path
+              d="M 90 320 C 80 220, 130 150, 240 130 C 330 110, 400 160, 420 240 C 440 310, 370 380, 350 430 C 370 480, 470 490, 480 570 C 490 640, 420 670, 330 660 C 230 650, 170 600, 150 510 C 100 450, 110 380, 90 320 Z"
+              fill="#ddcca9"
+              stroke="#baa883"
+              strokeWidth="1.8"
+              opacity="0.85"
+            />
+            {/* Western Coastal Shallows Echo Line */}
+            <path
+              d="M 82 320 C 72 215, 124 142, 238 122 C 333 102, 407 154, 428 238 C 448 312, 376 384, 356 434 C 376 486, 478 496, 488 578 C 498 650, 424 680, 330 670 C 224 660, 162 608, 142 516 C 92 454, 102 382, 82 320 Z"
+              fill="none"
+              stroke="#baa883"
+              strokeWidth="0.8"
+              strokeDasharray="2 3"
+              opacity="0.5"
+            />
+
+            {/* Continent 2: Northern Promontory & Polaris Archipelago (Sectors III, V) */}
+            <path
+              d="M 450 170 C 460 100, 530 80, 620 80 C 700 70, 780 100, 800 170 C 810 240, 740 280, 660 270 C 590 270, 540 240, 480 250 C 440 240, 440 190, 450 170 Z"
+              fill="#d8c5a0"
+              stroke="#baa883"
+              strokeWidth="1.8"
+              opacity="0.85"
+            />
+            {/* Northern Coastal Shallows Echo Line */}
+            <path
+              d="M 442 170 C 452 94, 526 72, 620 72 C 704 62, 788 94, 808 168 C 818 244, 746 288, 662 278 C 588 278, 536 246, 476 256 C 434 246, 434 192, 442 170 Z"
+              fill="none"
+              stroke="#baa883"
+              strokeWidth="0.8"
+              strokeDasharray="2 3"
+              opacity="0.5"
+            />
+
+            {/* Continent 3: Southeastern Desert Landmass (Sector VI) */}
+            <path
+              d="M 640 450 C 690 380, 800 370, 870 410 C 930 450, 960 550, 930 630 C 890 680, 780 680, 710 650 C 640 620, 600 530, 640 450 Z"
+              fill="#dac7a3"
+              stroke="#baa883"
+              strokeWidth="1.8"
+              opacity="0.85"
+            />
+            {/* Southeastern Coastal Shallows Echo Line */}
+            <path
+              d="M 632 450 C 684 374, 802 362, 876 404 C 938 446, 970 552, 938 638 C 896 690, 782 690, 708 658 C 634 626, 592 532, 632 450 Z"
+              fill="none"
+              stroke="#baa883"
+              strokeWidth="0.8"
+              strokeDasharray="2 3"
+              opacity="0.5"
+            />
+
+            {/* Satellite Islets in the Sound */}
+            <path
+              d="M 520 370 Q 545 355 555 375 T 520 395 Z"
+              fill="#ddcca9"
+              stroke="#baa883"
+              strokeWidth="1.2"
+              opacity="0.8"
+            />
+            <path
+              d="M 580 430 Q 600 420 610 435 T 580 450 Z"
+              fill="#ddcca9"
+              stroke="#baa883"
+              strokeWidth="1.2"
+              opacity="0.8"
+            />
+            <path
+              d="M 230 490 Q 250 480 255 495 T 230 510 Z"
+              fill="#ddcca9"
+              stroke="#baa883"
+              strokeWidth="1.2"
+              opacity="0.8"
+            />
+
+            {/* Serpentine River flowing from highlands to southern bay */}
+            <path
+              d="M 310 230 Q 360 320 340 400 T 420 520 T 410 600"
+              fill="none"
+              stroke="#7a97a6"
+              strokeWidth="2.2"
+              strokeOpacity="0.75"
+              strokeDasharray="4 2"
+            />
+
+            {/* Mountain Peaks near Polaris Vault (Sector V) */}
+            <path
+              d="M 680 200 L 695 170 L 710 200 M 705 200 L 720 165 L 735 200 M 730 200 L 745 172 L 760 200"
+              fill="none"
+              stroke="#826e4f"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            {/* Mountain Peaks near Meridian Terrace (Sector II) */}
+            <path
+              d="M 260 215 L 275 185 L 290 215 M 285 215 L 300 180 L 315 215"
+              fill="none"
+              stroke="#826e4f"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+
+            {/* Desert Dune Ridges near Sand Dunes (Sector VI) */}
+            <path
+              d="M 780 470 Q 805 460 830 470 M 825 520 Q 850 510 875 520 M 760 560 Q 785 550 810 560 M 820 610 Q 845 600 870 610"
+              fill="none"
+              stroke="#ab905c"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+
+            {/* Ocean Waves */}
+            <path
+              d="M 440 330 Q 455 322 470 330 M 455 330 Q 470 322 485 330"
+              fill="none"
+              stroke="#7e95a3"
+              strokeWidth="1.2"
+              strokeOpacity="0.5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 620 310 Q 635 302 650 310 M 635 310 Q 650 302 665 310"
+              fill="none"
+              stroke="#7e95a3"
+              strokeWidth="1.2"
+              strokeOpacity="0.5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 480 500 Q 495 492 510 500 M 495 500 Q 510 492 525 500"
+              fill="none"
+              stroke="#7e95a3"
+              strokeWidth="1.2"
+              strokeOpacity="0.5"
+              strokeLinecap="round"
+            />
+
+            {/* Open Sea Ocean Inscription */}
+            <text
+              x="560"
+              y="480"
+              textAnchor="middle"
+              fill="#806d4e"
+              fontSize="13"
+              letterSpacing="0.32em"
+              opacity="0.65"
+              fontStyle="italic"
+            >
+              MARE INCOGNITA
+            </text>
+
+            {/* Chained Mission Nautical Routes between Consecutive Sectors */}
+            {SECTOR_METAS.slice(0, -1).map((sector, i) => {
+              const nextSector = SECTOR_METAS[i + 1];
+              const isCompleted = progress.completed.includes(sector.id);
+              const isNextUnlocked = missionUnlocked(i + 1, progress.completed);
+
+              const x1 = sector.mapX * 10;
+              const y1 = sector.mapY * 7;
+              const x2 = nextSector.mapX * 10;
+              const y2 = nextSector.mapY * 7;
+              const pathD = getSectorPath(i, x1, y1, x2, y2);
+
+              return (
+                <g key={`route-${sector.id}-${nextSector.id}`}>
+                  {/* Route glow / halo for solved courses */}
+                  {isCompleted && (
+                    <path
+                      d={pathD}
+                      fill="none"
+                      stroke="#c99738"
+                      strokeWidth="4"
+                      strokeOpacity="0.35"
+                      strokeLinecap="round"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  )}
+                  {/* Curvy dashed nautical voyage route */}
+                  <path
+                    d={pathD}
+                    fill="none"
+                    stroke={
+                      isCompleted ? "#97403a" : isNextUnlocked ? "#a86036" : "#7a674e"
+                    }
+                    strokeWidth={isCompleted ? "2.5" : "1.8"}
+                    strokeDasharray={isCompleted ? "7 6" : "5 5"}
+                    strokeOpacity={isNextUnlocked ? 0.95 : 0.4}
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Interactive Sector Seals */}
           {SECTOR_METAS.map((sector) => {
             const unlocked = missionUnlocked(sector.index, progress.completed);
             const completed = progress.completed.includes(sector.id);
@@ -288,58 +483,63 @@ export function WorldMap({
                   aria-label={`Sector ${sector.roman}: ${MISSIONS[sector.index].title} ${
                     completed ? "(Completed)" : unlocked ? "(Unlocked)" : "(Locked)"
                   }`}
-                  className={`group relative flex flex-col items-center transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/80 rounded-full ${
+                  className={`group relative flex flex-col items-center transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/80 rounded-lg ${
                     unlocked
                       ? "cursor-pointer hover:scale-110 active:scale-95"
                       : "cursor-not-allowed opacity-50"
                   }`}
                 >
-                  {/* Glowing selection ring */}
-                  {isSelected ? (
-                    <motion.div
-                      layoutId="activeSectorRing"
-                      className="absolute -inset-2.5 rounded-full border-2 border-gold bg-gold/25 animate-pulse pointer-events-none"
-                    />
-                  ) : null}
-
-                  {/* Wax Seal / Marker Button */}
-                  <div
-                    className={`relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border-2 p-1 shadow-xl transition-all ${
-                      completed
-                        ? "border-wax bg-gradient-to-br from-wax via-[#b24c45] to-[#5c2420] text-parchment wax-seal-shadow"
-                        : isSelected
-                        ? "border-[#d8b056] bg-gradient-to-br from-[#e0be6c] via-[#b58c35] to-[#7a591e] text-[#241a0d]"
-                        : unlocked
-                        ? "border-gold/60 bg-gradient-to-br from-[#dfc17f] to-[#99742a] text-[#241a0d]"
-                        : "border-ink/40 bg-[#423727] text-[#a4967d]"
-                    }`}
-                  >
-                    <div className="flex h-full w-full items-center justify-center rounded-full border border-black/20 bg-black/10 shadow-inner">
-                      <Icon className="h-6 w-6 sm:h-7 sm:w-7 drop-shadow" />
-                    </div>
-
-                    {/* Status badge in corner */}
-                    {!unlocked ? (
-                      <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#342718] text-[#f2e8d5] ring-1 ring-gold/40">
-                        <Lock className="h-3 w-3" />
-                      </div>
-                    ) : completed ? (
-                      <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-wax text-parchment ring-1 ring-gold/50 shadow">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      </div>
+                  {/* Wax Seal Container with perfectly circular selection ring */}
+                  <div className="relative flex items-center justify-center">
+                    {/* Glowing selection ring strictly around the circular seal */}
+                    {isSelected ? (
+                      <motion.div
+                        layoutId="activeSectorRing"
+                        className="absolute -inset-2.5 rounded-full border-2 border-gold bg-gold/25 animate-pulse pointer-events-none"
+                      />
                     ) : null}
+
+                    {/* Wax Seal / Marker Button */}
+                    <div
+                      className={`relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border-2 p-1 shadow-xl transition-all ${
+                        completed
+                          ? "border-wax bg-gradient-to-br from-wax via-[#b24c45] to-[#5c2420] text-parchment wax-seal-shadow"
+                          : isSelected
+                          ? "border-[#d8b056] bg-gradient-to-br from-[#e0be6c] via-[#b58c35] to-[#7a591e] text-[#241a0d]"
+                          : unlocked
+                          ? "border-gold/60 bg-gradient-to-br from-[#dfc17f] to-[#99742a] text-[#241a0d]"
+                          : "border-ink/40 bg-[#423727] text-[#a4967d]"
+                      }`}
+                    >
+                      <div className="flex h-full w-full items-center justify-center rounded-full border border-black/20 bg-black/10 shadow-inner">
+                        <Icon className="h-6 w-6 sm:h-7 sm:w-7 drop-shadow" />
+                      </div>
+
+                      {/* Status badge in corner */}
+                      {!unlocked ? (
+                        <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#342718] text-[#f2e8d5] ring-1 ring-gold/40">
+                          <Lock className="h-3 w-3" />
+                        </div>
+                      ) : completed ? (
+                        <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-wax text-parchment ring-1 ring-gold/50 shadow">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
 
-                  {/* Clean, uncluttered label: Full badge for selected, clean roman title for others */}
-                  <div className="mt-1.5 text-center pointer-events-none">
+                  {/* Clean, uncluttered label with clear parchment backing */}
+                  <div className="mt-2 text-center pointer-events-none max-w-[150px] sm:max-w-[190px] flex flex-col items-center">
                     {isSelected ? (
-                      <span className="inline-block rounded bg-[#20180d] px-2 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider uppercase text-gold shadow whitespace-nowrap">
+                      <span className="inline-block rounded bg-[#20180d] px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider uppercase text-gold shadow-md whitespace-nowrap mb-1 border border-gold/40">
                         ● {completed ? "SECTOR " + sector.roman + ": COMPLETED" : "SECTOR " + sector.roman + ": ACTIVE"}
                       </span>
                     ) : null}
                     <span
-                      className={`block text-[11px] sm:text-xs font-bold tracking-wide ${
-                        isSelected ? "text-[#1c150c] font-black" : "text-[#473a27]"
+                      className={`inline-block px-2.5 py-0.5 rounded text-[11px] sm:text-xs font-bold tracking-wide leading-tight shadow-sm backdrop-blur-[1px] ${
+                        isSelected
+                          ? "text-[#1a1309] font-black bg-[#faf3e3]/95 border border-[#b89f7a]/60 shadow"
+                          : "text-[#3d3120] bg-[#faf3e3]/80 border border-[#baa883]/30"
                       }`}
                     >
                       Sector {sector.roman} &bull; {MISSIONS[sector.index].title}

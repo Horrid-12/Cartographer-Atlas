@@ -41,10 +41,9 @@ export function loadProgress(): Progress {
     if (!isProgress(parsed)) return { ...DEFAULT_PROGRESS };
     // Deduplicate completed array for safety
     const uniqueCompleted = Array.from(new Set(parsed.completed));
-    const parsedInk = Math.max(0, Math.floor(parsed.ink));
     return {
       xp: Math.max(0, Math.floor(parsed.xp)),
-      ink: parsedInk < 1 ? START_INK : parsedInk,
+      ink: Math.max(0, Math.floor(parsed.ink)),
       completed: uniqueCompleted,
       activeMission: parsed.activeMission,
     };

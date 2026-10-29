@@ -57,4 +57,17 @@ describe("state", () => {
     expect(p).toEqual({ xp: 0, ink: START_INK, completed: [], activeMission: null });
     expect(localStorage.getItem(PERSISTENCE_KEY)).toBeNull();
   });
+
+  it("preserves ink at 0 without inflating back to START_INK", () => {
+    saveProgress({ xp: 100, ink: 0, completed: ["1"], activeMission: "2" });
+    const p = loadProgress();
+    expect(p.ink).toBe(0);
+  });
+
+  it("loadProgress after resetProgress returns START_INK", () => {
+    saveProgress({ xp: 50, ink: 0, completed: ["1"], activeMission: "2" });
+    resetProgress();
+    const p = loadProgress();
+    expect(p).toEqual({ xp: 0, ink: START_INK, completed: [], activeMission: null });
+  });
 });

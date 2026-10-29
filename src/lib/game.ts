@@ -30,7 +30,7 @@ export interface Progress {
 /*                                 Constants                                  */
 /* -------------------------------------------------------------------------- */
 
-export const START_INK = 5;
+export const START_INK = 1;
 export const INK_REWARD = 2;
 export const HINT_INK_COST = 1;
 export const HINT_SCORE_COST = 15;
