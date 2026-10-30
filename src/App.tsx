@@ -78,7 +78,7 @@ export default function App() {
 
       if (isFirst) {
         const nextCompleted = [...previous.completed, missionId];
-        const nextXp = previous.xp + breakdown.finalXp;
+        const nextXp = Math.round(previous.xp + breakdown.finalXp);
         const nextInk = previous.ink + INK_REWARD;
         const newRank = rankFor(nextXp);
         const isRankUp = newRank !== prevRank;

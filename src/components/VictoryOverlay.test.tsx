@@ -45,6 +45,25 @@ describe("VictoryOverlay & Phase 5 Game Integration", () => {
       expect(breakdown.finalXp).toBe(0);
       expect(scoreMission(mission1, 15, 5, 120)).toBe(0);
     });
+
+    it("normalizes fractional timeSec to whole integer XP without decimals", () => {
+      // Millisecond timestamp elapsed time: 27.101 seconds
+      const attempts = 1;
+      const hintsUsed = 1;
+      const timeSec = 27.101;
+
+      const engineScore = scoreMission(mission1, attempts, hintsUsed, timeSec);
+      const breakdown = computeScoreBreakdown(mission1, attempts, hintsUsed, timeSec);
+
+      // Math.floor(27.101) = 27s; (60 - 27) * 2 = 66 speed bonus; 100 + 66 - 15 = 151
+      expect(Number.isInteger(breakdown.speedBonus)).toBe(true);
+      expect(Number.isInteger(breakdown.finalXp)).toBe(true);
+      expect(Number.isInteger(engineScore)).toBe(true);
+      expect(breakdown.timeSec).toBe(27);
+      expect(breakdown.speedBonus).toBe(66);
+      expect(breakdown.finalXp).toBe(151);
+      expect(engineScore).toBe(151);
+    });
   });
 
   describe("VictoryOverlay Component rendering", () => {

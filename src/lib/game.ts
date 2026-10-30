@@ -197,12 +197,12 @@ export function scoreMission(
   hintsUsed: number,
   timeSec: number,
 ): number {
-  const time = Number.isFinite(timeSec) ? timeSec : Infinity;
+  const time = Number.isFinite(timeSec) ? Math.max(0, Math.floor(timeSec)) : Infinity;
   const speedBonus = Math.max(0, SPEED_BONUS_CAP_SEC - time) * SPEED_PER_SEC;
   const attemptPenalty = (attempts - 1) * ATTEMPT_PENALTY;
   const hintPenalty = hintsUsed * HINT_SCORE_COST;
 
-  return Math.max(0, mission.xp + speedBonus - attemptPenalty - hintPenalty);
+  return Math.round(Math.max(0, mission.xp + speedBonus - attemptPenalty - hintPenalty));
 }
 
 /** Title earned at a given XP total. */

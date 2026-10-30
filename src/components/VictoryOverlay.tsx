@@ -36,19 +36,19 @@ export function computeScoreBreakdown(
   hintsUsed: number,
   timeSec: number
 ): ScoreBreakdown {
-  const time = Number.isFinite(timeSec) ? timeSec : Infinity;
-  const speedBonus = Math.max(0, SPEED_BONUS_CAP_SEC - time) * SPEED_PER_SEC;
+  const time = Number.isFinite(timeSec) ? Math.max(0, Math.floor(timeSec)) : Infinity;
+  const speedBonus = Math.round(Math.max(0, SPEED_BONUS_CAP_SEC - time) * SPEED_PER_SEC);
   const attemptPenalty = Math.max(0, (attempts - 1) * ATTEMPT_PENALTY);
   const hintPenalty = hintsUsed * HINT_SCORE_COST;
-  const finalXp = scoreMission(mission, attempts, hintsUsed, timeSec);
+  const finalXp = scoreMission(mission, attempts, hintsUsed, time);
 
   return {
     baseXp: mission.xp,
     speedBonus,
     attemptPenalty,
     hintPenalty,
-    finalXp,
-    timeSec,
+    finalXp: Math.round(finalXp),
+    timeSec: time === Infinity ? 0 : time,
     attempts,
     hintsUsed,
   };
@@ -102,9 +102,9 @@ export function VictoryOverlay({
       timeSec
     );
 
-  const finalScore = score !== undefined ? score : activeBreakdown.finalXp;
+  const finalScore = Math.round(score !== undefined ? score : activeBreakdown.finalXp);
   const effectiveInk = inkAwarded !== undefined ? inkAwarded : (isFirstCompletion ? 2 : 0);
-  const effectiveXpAwarded = xpAwarded !== undefined ? xpAwarded : (isFirstCompletion ? finalScore : 0);
+  const effectiveXpAwarded = Math.round(xpAwarded !== undefined ? xpAwarded : (isFirstCompletion ? finalScore : 0));
 
   // Animated count-up for XP display
   const [displayXp, setDisplayXp] = useState(reducedMotion ? activeBreakdown.finalXp : 0);

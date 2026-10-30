@@ -56,7 +56,12 @@ export function saveProgress(progress: Progress): void {
   const s = storage();
   if (!s) return;
   try {
-    s.setItem(PERSISTENCE_KEY, JSON.stringify(progress));
+    const cleanProgress: Progress = {
+      ...progress,
+      xp: Math.max(0, Math.round(progress.xp)),
+      ink: Math.max(0, Math.round(progress.ink)),
+    };
+    s.setItem(PERSISTENCE_KEY, JSON.stringify(cleanProgress));
   } catch {
     return;
   }

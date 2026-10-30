@@ -97,7 +97,7 @@ export function MissionPanel({
     setAttempts(nextAttempts);
 
     if (normalize(answer) === normalize(mission.plaintext)) {
-      const timeSec = (Date.now() - startedAt) / 1000;
+      const timeSec = Math.floor((Date.now() - startedAt) / 1000);
       const score = scoreMission(mission, nextAttempts, hintsUsed, timeSec);
       setSolved(true);
       setDialShift(mission.shift);
