@@ -599,7 +599,11 @@ export function WorldMap({
               >
                 <Compass className="h-5 w-5 text-[#2b1f0e] group-hover:rotate-45 transition-transform" />
                 <span className="text-base sm:text-lg font-bold tracking-wider">
-                  {isSelectedCompleted ? "REVIEW DISPATCH →" : "START THE JOURNEY →"}
+                  {isSelectedCompleted
+                    ? "REVIEW DISPATCH →"
+                    : progress.completed.length > 0
+                    ? "CONTINUE THE JOURNEY →"
+                    : "START THE JOURNEY →"}
                 </span>
               </button>
             ) : (

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Map as MapIcon } from "lucide-react";
-import { Button } from "./components/Button";
 import { StatusBar } from "./components/StatusBar";
 import { MissionBoard } from "./components/MissionBoard";
 import { MissionPanel } from "./components/MissionPanel";
@@ -251,11 +250,6 @@ export default function App() {
                 activeIndex={activeIndex}
                 onSelect={selectMission}
               />
-              <div className="mt-4">
-                <Button variant="ghost" size="sm" onClick={handleReset}>
-                  Reset progress
-                </Button>
-              </div>
             </aside>
             <section>
               {mission ? (
