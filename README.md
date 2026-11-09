@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Vite-5.4-a9813c?logo=vite&logoColor=f2e8d5&labelColor=2a2419" alt="Vite" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-v4.1-a9813c?logo=tailwindcss&logoColor=f2e8d5&labelColor=2a2419" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Framer_Motion-11.11-a9813c?logo=framer&logoColor=f2e8d5&labelColor=2a2419" alt="Framer Motion" />
-  <img src="https://img.shields.io/badge/Tests-24_Passing-97403a?logo=vitest&logoColor=f2e8d5&labelColor=2a2419" alt="Vitest" />
+  <img src="https://img.shields.io/badge/Tests-28_Passing-97403a?logo=vitest&logoColor=f2e8d5&labelColor=2a2419" alt="Vitest" />
   <img src="https://img.shields.io/badge/License-MIT-97403a?labelColor=2a2419" alt="License" />
 </p>
 
@@ -18,7 +18,7 @@ A browser-based cartographic puzzle game where players decode Caesar-cipher disp
 - **Interactive World Map:** Antique nautical canvas with voyage routes, interactive pins, coordinate HUD, and compass rose.
 - **Decryption Desk:** Dedicated workspace with manual shift scrubbers (0-25), live transcription slate, and instant answer transfer.
 - **Astronomical Cipher Wheel:** Dual-gear brass rotor simulation calculating modular Caesar alignments and angular displacements.
-- **Ink Economy:** Start with 5 Ink; spend 1 per clue (with the final clue revealing the exact shift key); earn +2 Ink per solve.
+- **Ink Economy:** Start with 1 Ink; spend 1 per clue (the final clue reveals the exact shift key); earn +2 Ink per solve.
 - **Scoring Engine:** Calculates base XP, speed bonuses (+2 XP/sec under 60s), attempt penalties (-10 XP), and hint costs (-15 XP).
 - **Surveyor Ranks:** Progression from Novice Wanderer (0-199 XP) to Journeyman Surveyor (200-499 XP) and Master Cartographer (500+ XP).
 - **Wax Seal Victory Overlay:** Animated seal stamp, decrypted plaintext reveal, score breakdown, and replay-safe reward protection.
@@ -30,12 +30,12 @@ A browser-based cartographic puzzle game where players decode Caesar-cipher disp
 
 | Sector | Title | Place | Shift | Base XP | Docket | Coordinates |
 |:------:|-------|-------|:-----:|:-------:|:------:|-------------|
-| I | The Old Bridge | Cistern | 7 | 100 | C-1887-IV | 42°20'14" N • 09°42'02" W |
-| II | The Sun Clock | Meridian | 13 | 150 | C-1887-V | 42°22'30" N • 09°34'18" W |
-| III | The Watchtower | Tower | 3 | 150 | C-1887-VI | 42°19'05" N • 09°23'45" W |
-| IV | The River Bank | River | 5 | 200 | C-1887-VII | 42°17'12" N • 09°32'50" W |
-| V | The North Cave | Cave | 9 | 200 | C-1887-VIII | 42°26'40" N • 09°32'10" W |
-| VI | The Sand Dunes | Desert | 11 | 250 | C-1887-IX | 42°13'55" N • 09°28'15" W |
+| I | The Old Bridge | Cistern | 7 | 100 | C-1887-IV | 42°19'30" N • 09°42'50" W |
+| II | The Sun Clock | Meridian | 13 | 150 | C-1887-V | 42°26'10" N • 09°38'15" W |
+| III | The Watchtower | Tower | 3 | 150 | C-1887-VI | 42°27'45" N • 09°28'20" W |
+| IV | The River Bank | River | 5 | 200 | C-1887-VII | 42°13'50" N • 09°34'40" W |
+| V | The North Cave | Cave | 9 | 200 | C-1887-VIII | 42°27'15" N • 09°20'10" W |
+| VI | The Sand Dunes | Desert | 11 | 250 | C-1887-IX | 42°14'20" N • 09°17'35" W |
 
 Completing the first three sectors unlocks the "All Three Imperial Seals Restored" milestone.
 
@@ -77,7 +77,7 @@ score = Math.max(0, mission.xp + Math.max(0, 60 - timeSec) * 2 - (attempts - 1) 
 - **Build Tool:** Vite 5
 - **Styling:** Tailwind CSS v4 (configured natively in `src/index.css` via `@tailwindcss/vite` and `@theme` tokens)
 - **Animation & Icons:** Framer Motion, Lucide React
-- **Testing:** Vitest (24 tests across 5 test suites)
+- **Testing:** Vitest (28 tests across 5 test suites)
 - **State Persistence:** LocalStorage (`atlas-progress-v1`)
 
 ## Getting Started
@@ -99,7 +99,7 @@ Open `http://localhost:5173`.
 ### Scripts
 
 - `npm run dev` - Start the Vite dev server
-- `npm run test` - Run Vitest suite (24 tests across 5 test suites)
+- `npm run test` - Run Vitest suite (28 tests across 5 test suites)
 - `npm run build` - Type-check (`tsc -b`) and compile production bundle to `dist/`
 - `npm run preview` - Preview production build locally
 
@@ -111,8 +111,8 @@ src/
 ├── main.tsx                    # Entry point
 ├── index.css                   # Tailwind v4 theme tokens and parchment textures
 ├── lib/
-│   ├── game.ts                 # Missions, Caesar cipher, scoring, ranks, persistence
-│   ├── ai.ts                   # Progressive clue lookup with shift reveal
+│   ├── game.ts                 # Missions, Caesar cipher, scoring, ranks, unlocking
+│   ├── ai.ts                   # Progressive clue helper with shift reveal
 │   ├── audio.ts                # Audio engine (BGM, fanfare, Web Audio SFX)
 │   └── utils.ts                # Class-name helper (clsx + tailwind-merge)
 ├── game/
@@ -142,7 +142,7 @@ Run the test suite:
 npm run test
 ```
 
-The 24 tests across 5 suites cover:
+The 28 tests across 5 suites cover:
 - Caesar cipher encode/decode roundtrips and modulo-26 wrapping
 - Case and punctuation preservation
 - Score calculation and zero-floor clamping
