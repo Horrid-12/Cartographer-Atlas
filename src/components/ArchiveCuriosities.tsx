@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BookOpen, Trophy, Droplets, RotateCcw, AlertTriangle } from "lucide-react";
-import { START_INK, INK_REWARD, HINT_INK_COST, HINT_SCORE_COST, SPEED_BONUS_CAP_SEC, SPEED_PER_SEC, ATTEMPT_PENALTY } from "../lib/game";
+import { START_INK, INK_REWARD, HINT_TIERS, SPEED_BONUS_CAP_SEC, SPEED_PER_SEC, ATTEMPT_PENALTY } from "../lib/game";
 
 interface ArchiveCuriositiesProps {
   onReset: () => void;
@@ -99,7 +99,15 @@ export function ArchiveCuriosities({ onReset }: ArchiveCuriositiesProps) {
             <ul className="mt-3 space-y-1.5 text-xs text-[#4d3d27]">
               <li>&bull; Initial Flask Reserve: <strong>{START_INK} Ink</strong></li>
               <li>&bull; Sector Completion Bounty: <strong>+{INK_REWARD} Ink</strong></li>
-              <li>&bull; Hint Consultation: <strong>-{HINT_INK_COST} Ink</strong> &amp; <strong>-{HINT_SCORE_COST} Score XP</strong></li>
+              <li>
+                &bull; Hint Ladder (in order):{" "}
+                <strong>
+                  {HINT_TIERS.map(
+                    (tier, index) =>
+                      `Tier ${index + 1}: -${tier.ink} Ink / -${tier.score} Score XP`
+                  ).join("  •  ")}
+                </strong>
+              </li>
               <li>&bull; Erroneous Submission: <strong>-{ATTEMPT_PENALTY} XP</strong> per attempt past first</li>
               <li>&bull; Speed Bonus: <strong>+{SPEED_PER_SEC} XP/sec</strong> for solves under {SPEED_BONUS_CAP_SEC}s</li>
             </ul>

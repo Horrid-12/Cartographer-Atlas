@@ -11,6 +11,7 @@ import {
   rankFor,
   nextRankThreshold,
   missionUnlocked,
+  hintScorePenaltyFor,
   START_INK,
   INK_REWARD,
   type Progress,
@@ -24,20 +25,37 @@ describe("VictoryOverlay & Phase 5 Game Integration", () => {
   describe("Scoring formula & breakdown", () => {
     it("computes exact score matching scoreMission without modification", () => {
       const attempts = 2;
-      const hintsUsed = 1;
+      const hintScorePenalty = 10; // Tier 1 of the graduated hint ladder
       const timeSec = 25;
 
-      const engineScore = scoreMission(mission1, attempts, hintsUsed, timeSec);
-      const breakdown = computeScoreBreakdown(mission1, attempts, hintsUsed, timeSec);
+      const engineScore = scoreMission(mission1, attempts, hintScorePenalty, timeSec);
+      const breakdown = computeScoreBreakdown(mission1, attempts, hintScorePenalty, timeSec);
 
-      // Formula: mission.xp + Math.max(0, 60 - timeSec) * 2 - (attempts - 1) * 10 - hintsUsed * 15
-      // 100 + (35 * 2) - (1 * 10) - (1 * 15) = 100 + 70 - 10 - 15 = 145
+      // Formula: mission.xp + Math.max(0, 60 - timeSec) * 2 - (attempts - 1) * 10 - hintScorePenalty
+      // 100 + (35 * 2) - (1 * 10) - 10 = 100 + 70 - 10 - 10 = 150
       expect(breakdown.baseXp).toBe(100);
       expect(breakdown.speedBonus).toBe(70);
       expect(breakdown.attemptPenalty).toBe(10);
-      expect(breakdown.hintPenalty).toBe(15);
-      expect(breakdown.finalXp).toBe(145);
+      expect(breakdown.hintPenalty).toBe(10);
+      expect(breakdown.finalXp).toBe(150);
       expect(breakdown.finalXp).toBe(engineScore);
+    });
+
+    it("sums the graduated ladder penalty across revealed tiers", () => {
+      const attempts = 1;
+      const timeSec = 25;
+      // Tiers 1 + 2 + 3 purchased: 10 + 20 + 35 = 65
+      const hintScorePenalty = hintScorePenaltyFor(3);
+
+      expect(hintScorePenalty).toBe(65);
+
+      const breakdown = computeScoreBreakdown(mission1, attempts, hintScorePenalty, timeSec);
+      // 100 + (35 * 2) - 0 - 65 = 105
+      expect(breakdown.hintPenalty).toBe(65);
+      expect(breakdown.finalXp).toBe(105);
+      expect(breakdown.finalXp).toBe(
+        scoreMission(mission1, attempts, hintScorePenalty, timeSec)
+      );
     });
 
     it("clamps score at zero when penalties exceed base and speed bonus", () => {
@@ -49,20 +67,20 @@ describe("VictoryOverlay & Phase 5 Game Integration", () => {
     it("normalizes fractional timeSec to whole integer XP without decimals", () => {
       // Millisecond timestamp elapsed time: 27.101 seconds
       const attempts = 1;
-      const hintsUsed = 1;
+      const hintScorePenalty = 10;
       const timeSec = 27.101;
 
-      const engineScore = scoreMission(mission1, attempts, hintsUsed, timeSec);
-      const breakdown = computeScoreBreakdown(mission1, attempts, hintsUsed, timeSec);
+      const engineScore = scoreMission(mission1, attempts, hintScorePenalty, timeSec);
+      const breakdown = computeScoreBreakdown(mission1, attempts, hintScorePenalty, timeSec);
 
-      // Math.floor(27.101) = 27s; (60 - 27) * 2 = 66 speed bonus; 100 + 66 - 15 = 151
+      // Math.floor(27.101) = 27s; (60 - 27) * 2 = 66 speed bonus; 100 + 66 - 10 = 156
       expect(Number.isInteger(breakdown.speedBonus)).toBe(true);
       expect(Number.isInteger(breakdown.finalXp)).toBe(true);
       expect(Number.isInteger(engineScore)).toBe(true);
       expect(breakdown.timeSec).toBe(27);
       expect(breakdown.speedBonus).toBe(66);
-      expect(breakdown.finalXp).toBe(151);
-      expect(engineScore).toBe(151);
+      expect(breakdown.finalXp).toBe(156);
+      expect(engineScore).toBe(156);
     });
   });
 

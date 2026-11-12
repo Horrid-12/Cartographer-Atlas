@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Vite-5.4-a9813c?logo=vite&logoColor=f2e8d5&labelColor=2a2419" alt="Vite" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-v4.1-a9813c?logo=tailwindcss&logoColor=f2e8d5&labelColor=2a2419" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Framer_Motion-11.11-a9813c?logo=framer&logoColor=f2e8d5&labelColor=2a2419" alt="Framer Motion" />
-  <img src="https://img.shields.io/badge/Tests-28_Passing-97403a?logo=vitest&logoColor=f2e8d5&labelColor=2a2419" alt="Vitest" />
+  <img src="https://img.shields.io/badge/Tests-41_Passing-97403a?logo=vitest&logoColor=f2e8d5&labelColor=2a2419" alt="Vitest" />
   <img src="https://img.shields.io/badge/License-MIT-97403a?labelColor=2a2419" alt="License" />
 </p>
 
@@ -17,9 +17,9 @@ A browser-based cartographic puzzle game where players decode Caesar-cipher disp
 - **Six Linked Dispatches:** Solve sequential sectors to chart new routes across the archipelago.
 - **Interactive World Map:** Antique nautical canvas with voyage routes, interactive pins, coordinate HUD, and compass rose.
 - **Decryption Desk:** Dedicated workspace with manual shift scrubbers (0-25), live transcription slate, and instant answer transfer.
-- **Astronomical Cipher Wheel:** Dual-gear brass rotor simulation calculating modular Caesar alignments and angular displacements.
-- **Ink Economy:** Start with 1 Ink; spend 1 per clue (the final clue reveals the exact shift key); earn +2 Ink per solve.
-- **Scoring Engine:** Calculates base XP, speed bonuses (+2 XP/sec under 60s), attempt penalties (-10 XP), and hint costs (-15 XP).
+- **Ink Economy:** Start with 1 Ink; spend it on the graduated hint ladder (see below); earn +2 Ink per solve.
+- **Graduated Hint Ladder:** Three sequential clues per mission — rung 1 (1 Ink / -10 XP) narrows the key range, rung 2 (2 Ink / -20 XP) adds frequency-analysis advice, and rung 3 (3 Ink / -35 XP) reveals the exact shift key. Rungs must be bought in order; purchases persist across tab switches for the session.
+- **Scoring Engine:** Calculates base XP, speed bonuses (+2 XP/sec under 60s), attempt penalties (-10 XP), and the summed hint-ladder penalty of all rungs purchased.
 - **Surveyor Ranks:** Progression from Novice Wanderer (0-199 XP) to Journeyman Surveyor (200-499 XP) and Master Cartographer (500+ XP).
 - **Wax Seal Victory Overlay:** Animated seal stamp, decrypted plaintext reveal, score breakdown, and replay-safe reward protection.
 - **Expedition Journal & Archive:** Narrative logbook and cryptanalysis compendium explaining Caesar mathematics and frequency analysis.
@@ -48,10 +48,23 @@ Mathematical Caesar shift implementation with modulo-26 boundary normalization, 
 $$E(x) = (x + k) \bmod 26$$
 $$D(x) = (x - k) \bmod 26$$
 
+### Hint Ladder
+
+Three sequential rungs per mission, purchased in order (buying rung *N* requires rung *N−1*):
+
+| Rung | Ink | Score Penalty | Clue |
+|:----:|:---:|:-------------:|------|
+| 1 | 1 | -10 XP | Key is 1–25; try the shift in both directions |
+| 2 | 2 | -20 XP | English letter-frequency advice ("E" is most common) |
+| 3 | 3 | -35 XP | Authored clue + **Archival Cipher Record** revealing the exact shift |
+
+Only the final rung reveals the exact shift key. A full ladder costs 6 Ink / 65 XP, while a campaign earns only 13 Ink in total (1 start + 6 × 2 per solve) — so players must budget rungs across missions. Purchases are session-only (not persisted to the save file) and survive tab switches.
+
 ### Scoring Formula
 
 ```ts
-score = Math.max(0, mission.xp + Math.max(0, 60 - timeSec) * 2 - (attempts - 1) * 10 - hintsUsed * 15)
+hintScorePenalty = sum of HINT_TIERS[t].score for each purchased rung
+score = Math.max(0, mission.xp + Math.max(0, 60 - timeSec) * 2 - (attempts - 1) * 10 - hintScorePenalty)
 ```
 
 ### Ranks
@@ -77,7 +90,7 @@ score = Math.max(0, mission.xp + Math.max(0, 60 - timeSec) * 2 - (attempts - 1) 
 - **Build Tool:** Vite 5
 - **Styling:** Tailwind CSS v4 (configured natively in `src/index.css` via `@tailwindcss/vite` and `@theme` tokens)
 - **Animation & Icons:** Framer Motion, Lucide React
-- **Testing:** Vitest (28 tests across 5 test suites)
+- **Testing:** Vitest (41 tests across 5 test suites)
 - **State Persistence:** LocalStorage (`atlas-progress-v1`)
 
 ## Getting Started
@@ -99,7 +112,7 @@ Open `http://localhost:5173`.
 ### Scripts
 
 - `npm run dev` - Start the Vite dev server
-- `npm run test` - Run Vitest suite (28 tests across 5 test suites)
+- `npm run test` - Run Vitest suite (41 tests across 5 test suites)
 - `npm run build` - Type-check (`tsc -b`) and compile production bundle to `dist/`
 - `npm run preview` - Preview production build locally
 
@@ -112,7 +125,7 @@ src/
 ├── index.css                   # Tailwind v4 theme tokens and parchment textures
 ├── lib/
 │   ├── game.ts                 # Missions, Caesar cipher, scoring, ranks, unlocking
-│   ├── ai.ts                   # Progressive clue helper with shift reveal
+│   ├── ai.ts                   # Graduated hint ladder helper (shift reveal on final rung only)
 │   ├── audio.ts                # Audio engine (BGM, fanfare, Web Audio SFX)
 │   └── utils.ts                # Class-name helper (clsx + tailwind-merge)
 ├── game/
@@ -124,7 +137,7 @@ src/
     ├── WorldMap.tsx            # Parchment canvas, voyage routes, pins, grid
     ├── MissionPanel.tsx        # Active decryption desk and answer submission
     ├── MissionBoard.tsx        # Sidebar mission selector with lock states
-    ├── CipherWheel.tsx         # Concentric astronomical cipher wheel
+    ├── CipherWheel.tsx         # Unused legacy cipher wheel (F-30, imported nowhere)
     ├── StatusBar.tsx           # Progress summary
     ├── VictoryOverlay.tsx      # Wax seal, score breakdown, rank-up animation
     ├── ExpeditionJournal.tsx   # Sector logbook and survey dossiers
@@ -142,12 +155,12 @@ Run the test suite:
 npm run test
 ```
 
-The 28 tests across 5 suites cover:
+The 41 tests across 5 suites cover:
 - Caesar cipher encode/decode roundtrips and modulo-26 wrapping
 - Case and punctuation preservation
 - Score calculation and zero-floor clamping
 - LocalStorage corruption recovery and schema fallback
-- Progressive clue delivery and decisive shift reveals
+- Graduated hint ladder: tier pricing/penalties, sequential purchase guard, double-charge protection, and shift reveal only on the final rung
 - Victory overlay sequence, score breakdown, and anti-duplication protection
 
 ## License

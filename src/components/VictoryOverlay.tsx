@@ -13,7 +13,6 @@ import {
   SPEED_BONUS_CAP_SEC,
   SPEED_PER_SEC,
   ATTEMPT_PENALTY,
-  HINT_SCORE_COST,
   type Mission,
 } from "../lib/game";
 import { Button } from "./Button";
@@ -27,20 +26,22 @@ export interface ScoreBreakdown {
   finalXp: number;
   timeSec: number;
   attempts: number;
-  hintsUsed: number;
+  hintScorePenalty: number;
 }
 
 export function computeScoreBreakdown(
   mission: Mission,
   attempts: number,
-  hintsUsed: number,
+  hintScorePenalty: number,
   timeSec: number
 ): ScoreBreakdown {
   const time = Number.isFinite(timeSec) ? Math.max(0, Math.floor(timeSec)) : Infinity;
   const speedBonus = Math.round(Math.max(0, SPEED_BONUS_CAP_SEC - time) * SPEED_PER_SEC);
   const attemptPenalty = Math.max(0, (attempts - 1) * ATTEMPT_PENALTY);
-  const hintPenalty = hintsUsed * HINT_SCORE_COST;
-  const finalXp = scoreMission(mission, attempts, hintsUsed, time);
+  const hintPenalty = Number.isFinite(hintScorePenalty)
+    ? Math.max(0, hintScorePenalty)
+    : 0;
+  const finalXp = scoreMission(mission, attempts, hintPenalty, time);
 
   return {
     baseXp: mission.xp,
@@ -50,7 +51,7 @@ export function computeScoreBreakdown(
     finalXp: Math.round(finalXp),
     timeSec: time === Infinity ? 0 : time,
     attempts,
-    hintsUsed,
+    hintScorePenalty: hintPenalty,
   };
 }
 
@@ -59,7 +60,7 @@ export interface VictoryOverlayProps {
   breakdown?: ScoreBreakdown;
   score?: number;
   attempts?: number;
-  hintsUsed?: number;
+  hintScorePenalty?: number;
   timeSec?: number;
   isFirstCompletion?: boolean;
   inkAwarded?: number;
@@ -78,7 +79,7 @@ export function VictoryOverlay({
   breakdown,
   score,
   attempts = 1,
-  hintsUsed = 0,
+  hintScorePenalty = 0,
   timeSec = 0,
   isFirstCompletion = true,
   inkAwarded,
@@ -98,7 +99,7 @@ export function VictoryOverlay({
     computeScoreBreakdown(
       mission,
       attempts,
-      hintsUsed,
+      hintScorePenalty,
       timeSec
     );
 
@@ -317,9 +318,7 @@ export function VictoryOverlay({
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#61523b]">
-                  {`Hint Penalty (${activeBreakdown.hintsUsed} hint${activeBreakdown.hintsUsed !== 1 ? "s" : ""}):`}
-                </span>
+                <span className="text-[#61523b]">Hint Consultation Penalty:</span>
                 <span className="font-bold text-wax">
                   {activeBreakdown.hintPenalty > 0
                     ? `-${activeBreakdown.hintPenalty} XP`

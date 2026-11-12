@@ -5,9 +5,12 @@ import {
   computeCiphertext,
   decodeText,
   scoreMission,
-  HINT_INK_COST,
+  HINT_TIERS,
+  hintInkCost,
+  hintScorePenaltyFor,
   type Mission,
 } from "../lib/game";
+import { getClue } from "../lib/ai";
 import {
   playClick,
   playHintSound,
@@ -26,6 +29,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Lightbulb,
+  Lock,
 } from "lucide-react";
 
 function normalize(value: string): string {
@@ -35,24 +39,24 @@ function normalize(value: string): string {
 export function MissionPanel({
   mission,
   ink,
+  revealedCount,
   onSolve,
   onUseHint,
 }: {
   mission: Mission;
   ink?: number;
+  revealedCount: number;
   onSolve: (
     score: number,
     missionId: string,
-    stats?: { attempts: number; hintsUsed: number; timeSec: number }
+    stats?: { attempts: number; hintScorePenalty: number; timeSec: number }
   ) => void;
-  onUseHint: () => boolean;
+  onUseHint: (tier: number) => boolean;
 }) {
   const ciphertext = computeCiphertext(mission);
   const [dialShift, setDialShift] = useState(0);
   const [answer, setAnswer] = useState("");
   const [attempts, setAttempts] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [clueRevealed, setClueRevealed] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error" | "info";
     text: string;
@@ -61,6 +65,15 @@ export function MissionPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [applied, setApplied] = useState(false);
   const [startedAt] = useState(() => Date.now());
+
+  // Ladder state derived from the session purchase count owned by App.
+  // Once solved, every tier reads as revealed for display purposes only —
+  // the score penalty always uses the actual `revealedCount` purchases.
+  const ladderRevealed = solved ? HINT_TIERS.length : revealedCount;
+  const controllerUnlocked = ladderRevealed >= HINT_TIERS.length;
+  const nextTierUnlocked = revealedCount < HINT_TIERS.length;
+  const nextTierCost = nextTierUnlocked ? hintInkCost(revealedCount) : 0;
+  const canAffordNext = typeof ink !== "number" || ink >= nextTierCost;
 
   const liveTranslation = decodeText(ciphertext, dialShift);
 
@@ -98,7 +111,8 @@ export function MissionPanel({
 
     if (normalize(answer) === normalize(mission.plaintext)) {
       const timeSec = Math.floor((Date.now() - startedAt) / 1000);
-      const score = scoreMission(mission, nextAttempts, hintsUsed, timeSec);
+      const hintScorePenalty = hintScorePenaltyFor(revealedCount);
+      const score = scoreMission(mission, nextAttempts, hintScorePenalty, timeSec);
       setSolved(true);
       setDialShift(mission.shift);
       playSuccessSound();
@@ -108,7 +122,7 @@ export function MissionPanel({
       });
       onSolve(score, mission.id, {
         attempts: nextAttempts,
-        hintsUsed,
+        hintScorePenalty,
         timeSec,
       });
     } else {
@@ -121,16 +135,27 @@ export function MissionPanel({
     }
   }
 
-  function useHint() {
+  /**
+   * Purchases the next rung of the hint ladder (`tier` must equal the
+   * current revealed count — App enforces the sequential contract).
+   */
+  function useHint(tier: number) {
     if (solved) return;
-    if (clueRevealed) {
+    if (tier !== revealedCount) {
+      setFeedback({
+        type: "info",
+        text: "The archivists reveal their clues in order — consult the current rung first.",
+      });
+      return;
+    }
+    if (!nextTierUnlocked) {
       setFeedback({
         type: "info",
         text: "The archival clue is already active. Use the Manual Cipher Shift Controller.",
       });
       return;
     }
-    const ok = onUseHint();
+    const ok = onUseHint(tier);
     if (!ok) {
       playErrorSound();
       setFeedback({
@@ -140,11 +165,12 @@ export function MissionPanel({
       return;
     }
     playHintSound();
-    setClueRevealed(true);
-    setHintsUsed(1);
+    const isFinalTier = tier === HINT_TIERS.length - 1;
     setFeedback({
       type: "success",
-      text: "Archival Clue Revealed: Manual Cipher Shift Controller unlocked.",
+      text: isFinalTier
+        ? "Archival Cipher Record Revealed: Manual Cipher Shift Controller unlocked."
+        : `Archival Clue Revealed (Tier ${tier + 1}): the search narrows.`,
     });
   }
 
@@ -183,8 +209,75 @@ export function MissionPanel({
         </div>
       </div>
 
-      {/* Clue Section: Manual Cipher Shift Controller */}
-      {clueRevealed || solved ? (
+      {/* Hint Ladder: revealed rungs readable, next rung buyable, later rungs locked */}
+      <div className="rounded-md border border-dashed border-gold/50 bg-[#f4ebd6]/50 p-4">
+        <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-[#735d33]">
+          <Lightbulb className="h-4 w-4 text-gold" />
+          <span>{revealedCount === 0 ? "Archival Clue Locked" : "Archival Hint Ladder"}</span>
+        </div>
+        <p className="mt-1 text-xs text-[#635133]/80">
+          {revealedCount === 0
+            ? `Consult the clue below (-${hintInkCost(0)} Ink) to reveal the Manual Cipher Shift Controller.`
+            : "Each rung narrows the search — only the final rung records the exact shift."}
+        </p>
+
+        <ol className="mt-3 space-y-2">
+          {HINT_TIERS.map((tier, index) => {
+            const isRevealed = index < ladderRevealed;
+            const isNext = !solved && index === revealedCount && nextTierUnlocked;
+
+            return (
+              <li
+                key={index}
+                className={`rounded border p-2.5 text-left ${
+                  isRevealed
+                    ? "border-gold/60 bg-[#efe4cd]"
+                    : isNext
+                    ? "border-ink/25 bg-[#fcf9f2]"
+                    : "border-ink/15 bg-[#f4ebd6]/60 opacity-80"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6b5839]">
+                    {isRevealed ? (
+                      <Check className="h-3.5 w-3.5 text-wax" aria-hidden="true" />
+                    ) : (
+                      <Lock className="h-3.5 w-3.5 text-[#8a7a5c]" aria-hidden="true" />
+                    )}
+                    {`Rung ${index + 1} of ${HINT_TIERS.length}`}
+                  </span>
+                  <span className="text-[10px] font-semibold text-[#78674d]">
+                    {`Cost: ${tier.ink} Ink & ${tier.score} Score XP`}
+                  </span>
+                </div>
+
+                {isRevealed ? (
+                  <p className="mt-1.5 whitespace-pre-line text-xs italic leading-relaxed text-[#473620]">
+                    {getClue(mission, index)}
+                  </p>
+                ) : isNext ? (
+                  <button
+                    type="button"
+                    onClick={() => useHint(index)}
+                    disabled={!canAffordNext}
+                    className="mt-1.5 flex items-center gap-1.5 rounded border border-gold/70 bg-[#e8dbc0] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#473822] hover:bg-[#dccdb0] active:scale-95 disabled:opacity-50 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+                  >
+                    <Droplets className="h-3.5 w-3.5 text-[#4a89a0]" aria-hidden="true" />
+                    {`Consult Rung ${index + 1} (${hintInkCost(index)} Ink)`}
+                  </button>
+                ) : (
+                  <p className="mt-1.5 text-[11px] text-[#78674d]">
+                    {`Locked — purchase Rung ${index} first.`}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {/* Manual Cipher Shift Controller — unlocked by the final rung */}
+      {controllerUnlocked ? (
         <div className="rounded-md border border-gold/60 bg-[#f4ebd6] p-4 sm:p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ink/10 pb-2.5">
             <div className="flex items-center gap-2">
@@ -210,8 +303,8 @@ export function MissionPanel({
               <Lightbulb className="h-3.5 w-3.5 text-gold shrink-0" />
               <span>Cartographer&apos;s Field Clue:</span>
             </div>
-            <p className="italic leading-relaxed text-xs sm:text-sm text-[#473620]">
-              &ldquo;{mission.hints[mission.hints.length - 1] ?? mission.hints[0]}&rdquo;
+            <p className="italic leading-relaxed text-xs sm:text-sm text-[#473620] whitespace-pre-line">
+              {getClue(mission, mission.hints.length - 1)}
             </p>
           </div>
 
@@ -304,17 +397,7 @@ export function MissionPanel({
             </div>
           </div>
         </div>
-      ) : (
-        <div className="rounded-md border border-dashed border-gold/50 bg-[#f4ebd6]/50 p-4 text-center">
-          <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-[#735d33]">
-            <KeyRound className="h-4 w-4 text-gold" />
-            <span>Archival Clue Locked</span>
-          </div>
-          <p className="mt-1 text-xs text-[#635133]/80">
-            Consult the clue below (-{HINT_INK_COST} Ink) to reveal the Manual Cipher Shift Controller.
-          </p>
-        </div>
-      )}
+      ) : null}
 
       {/* Plaintext Manual Text Input & Submission */}
       <div className="space-y-3">
@@ -334,7 +417,7 @@ export function MissionPanel({
             if (event.key === "Enter") submit();
           }}
           placeholder={
-            clueRevealed || solved
+            controllerUnlocked
               ? "Type the decoded message or use the transcribed slate above..."
               : "Type the decoded message or consult clue for shift controller..."
           }
@@ -354,11 +437,15 @@ export function MissionPanel({
 
           <Button
             variant="secondary"
-            onClick={useHint}
-            disabled={solved || clueRevealed || (typeof ink === "number" && ink < HINT_INK_COST)}
+            onClick={() => useHint(revealedCount)}
+            disabled={
+              solved ||
+              !nextTierUnlocked ||
+              (typeof ink === "number" && ink < nextTierCost)
+            }
             className="min-h-[44px] flex items-center gap-2 text-xs font-bold uppercase tracking-wider shadow cursor-pointer"
           >
-            {clueRevealed ? (
+            {controllerUnlocked ? (
               <>
                 <Check className="h-4 w-4 text-wax" />
                 <span>Clue Active (Shift Controller)</span>
@@ -367,7 +454,7 @@ export function MissionPanel({
               <>
                 <Droplets className="h-4 w-4 text-[#4a89a0]" />
                 <span>
-                  Consult Clue ({HINT_INK_COST} Ink)
+                  Consult Clue {revealedCount + 1} ({nextTierCost} Ink)
                   {typeof ink === "number" ? ` (${ink} Left)` : ""}
                 </span>
               </>
@@ -400,7 +487,7 @@ export function MissionPanel({
         {/* Solved Summary */}
         {solved && (
           <p className="mt-2 text-xs text-ink/70">
-            Shift verified: Key +{mission.shift}. Attempts: {attempts}. Clue consulted: {clueRevealed ? "Yes" : "No"}.
+            Shift verified: Key +{mission.shift}. Attempts: {attempts}. Rungs consulted: {revealedCount} of {HINT_TIERS.length}.
           </p>
         )}
       </div>

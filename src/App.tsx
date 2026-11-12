@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Map as MapIcon } from "lucide-react";
 import { StatusBar } from "./components/StatusBar";
@@ -18,6 +18,7 @@ import {
   missionUnlocked,
   rankFor,
   INK_REWARD,
+  purchaseHintTier,
   type Progress,
 } from "./lib/game";
 import { SECTOR_METAS } from "./data/lore";
@@ -31,6 +32,12 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(initialIndex >= 0 ? initialIndex : 0);
   const [currentTab, setCurrentTab] = useState<NavTab>("map");
   const [victoryData, setVictoryData] = useState<VictoryOverlayProps | null>(null);
+  // Session-only graduated hint ladder: how many tiers have been purchased
+  // per mission. Survives tab switches; intentionally not persisted (SUS-011).
+  const [hintsRevealed, setHintsRevealed] = useState<Record<string, number>>({});
+  // Synchronous charge guard: blocks a rapid double-click from charging Ink
+  // twice before React commits the updated state (SUS-014).
+  const hintChargeInFlight = useRef(false);
 
   const mission = MISSIONS[activeIndex] ?? MISSIONS[0];
   const activeSectorMeta = SECTOR_METAS[activeIndex] ?? SECTOR_METAS[0];
@@ -56,16 +63,16 @@ export default function App() {
   function handleSolve(
     _score: number,
     missionId: string,
-    stats?: { attempts: number; hintsUsed: number; timeSec: number }
+    stats?: { attempts: number; hintScorePenalty: number; timeSec: number }
   ) {
     const targetMission = MISSIONS.find((m) => m.id === missionId) ?? mission;
     const attempts = stats?.attempts ?? 1;
-    const hintsUsed = stats?.hintsUsed ?? 0;
+    const hintScorePenalty = stats?.hintScorePenalty ?? 0;
     const timeSec = stats?.timeSec ?? 0;
     const breakdown = computeScoreBreakdown(
       targetMission,
       attempts,
-      hintsUsed,
+      hintScorePenalty,
       timeSec
     );
 
@@ -98,7 +105,7 @@ export default function App() {
           breakdown,
           score: breakdown.finalXp,
           attempts,
-          hintsUsed,
+          hintScorePenalty,
           timeSec,
           isFirstCompletion: true,
           inkAwarded: INK_REWARD,
@@ -133,7 +140,7 @@ export default function App() {
           breakdown,
           score: breakdown.finalXp,
           attempts,
-          hintsUsed,
+          hintScorePenalty,
           timeSec,
           isFirstCompletion: false,
           inkAwarded: 0,
@@ -161,16 +168,41 @@ export default function App() {
     });
   }
 
-  function handleUseHint(): boolean {
-    if (progress.ink < 1) {
-      return false;
-    }
+  // Release the synchronous charge guard once the purchase has committed.
+  useEffect(() => {
+    hintChargeInFlight.current = false;
+  }, [hintsRevealed, progress.ink]);
+
+  /**
+   * Purchases tier `tier` of the graduated hint ladder.
+   * Sequential order, affordability and the in-flight double-charge guard
+   * (SUS-014) are enforced by `purchaseHintTier`. Returns false without
+   * charging on any rejection.
+   */
+  function handleUseHint(tier: number): boolean {
+    const revealedCount = hintsRevealed[mission.id] ?? 0;
+    const result = purchaseHintTier(
+      {
+        ink: progress.ink,
+        revealedCount,
+        inFlight: hintChargeInFlight.current,
+      },
+      tier
+    );
+
+    if (!result.ok) return false;
+
+    hintChargeInFlight.current = true;
     const next: Progress = {
       ...progress,
-      ink: Math.max(0, progress.ink - 1),
+      ink: Math.max(0, result.ink),
     };
     setProgress(next);
     saveProgress(next);
+    setHintsRevealed((previous) => ({
+      ...previous,
+      [mission.id]: result.revealedCount,
+    }));
     return true;
   }
 
@@ -189,6 +221,7 @@ export default function App() {
     setProgress(fresh);
     setActiveIndex(0);
     setVictoryData(null);
+    setHintsRevealed({});
     setCurrentTab("map");
   }
 
@@ -257,6 +290,7 @@ export default function App() {
                   key={mission.id}
                   mission={mission}
                   ink={progress.ink}
+                  revealedCount={hintsRevealed[mission.id] ?? 0}
                   onSolve={handleSolve}
                   onUseHint={handleUseHint}
                 />

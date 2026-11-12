@@ -32,12 +32,102 @@ export interface Progress {
 
 export const START_INK = 1;
 export const INK_REWARD = 2;
-export const HINT_INK_COST = 1;
-export const HINT_SCORE_COST = 15;
 export const SPEED_BONUS_CAP_SEC = 60;
 export const SPEED_PER_SEC = 2;
 export const ATTEMPT_PENALTY = 10;
 export const PERSISTENCE_KEY = "atlas-progress-v1";
+
+/**
+ * The graduated hint ladder: three sequential tiers per mission.
+ * Higher tiers cost more Ink and carry a steeper score penalty, and each
+ * tier must be purchased in order — tier 2 requires tier 1, tier 3 requires
+ * tier 2. Tier 3 (the final tier) is the only tier that reveals the exact
+ * shift via `getClue`.
+ */
+export const HINT_TIERS = [
+  { ink: 1, score: 10 },
+  { ink: 2, score: 20 },
+  { ink: 3, score: 35 },
+] as const;
+
+/** Ink cost to purchase hint `tier` (0-based). Clamped into the ladder. */
+export function hintInkCost(tier: number): number {
+  const index = clampTier(tier);
+  return HINT_TIERS[index].ink;
+}
+
+/** Score penalty for hint `tier` (0-based). Clamped into the ladder. */
+export function hintScoreCost(tier: number): number {
+  const index = clampTier(tier);
+  return HINT_TIERS[index].score;
+}
+
+/**
+ * Total score penalty for having revealed `revealedCount` tiers
+ * (i.e. the sum of every tier purchased so far).
+ */
+export function hintScorePenaltyFor(revealedCount: number): number {
+  const count = Math.max(0, Math.min(HINT_TIERS.length, Math.floor(revealedCount)));
+  let total = 0;
+  for (let tier = 0; tier < count; tier += 1) {
+    total += HINT_TIERS[tier].score;
+  }
+  return total;
+}
+
+/** Ink needed to buy every tier of one mission's ladder (6). */
+export function totalHintInk(): number {
+  return HINT_TIERS.reduce((sum, tier) => sum + tier.ink, 0);
+}
+
+/** Score penalty for buying every tier of one mission's ladder (65). */
+export function totalHintScore(): number {
+  return HINT_TIERS.reduce((sum, tier) => sum + tier.score, 0);
+}
+
+export type HintPurchaseState = {
+  /** Current ink reserves. */
+  ink: number;
+  /** Tiers already purchased for this mission. */
+  revealedCount: number;
+  /** True while a previous purchase has not committed yet (SUS-014). */
+  inFlight: boolean;
+};
+
+export type HintPurchaseResult =
+  | { ok: true; ink: number; revealedCount: number }
+  | { ok: false; reason: "out-of-order" | "already-complete" | "in-flight" | "insufficient-ink" };
+
+/**
+ * Sequential purchase decision for the graduated hint ladder.
+ *
+ * Tiers must be bought in order (tier N requires N tiers already revealed),
+ * the ladder has exactly `HINT_TIERS.length` rungs, an in-flight purchase
+ * never double-charges (SUS-014), and the tier's Ink cost must be affordable.
+ * On success the caller receives the updated `ink` and `revealedCount`.
+ */
+export function purchaseHintTier(state: HintPurchaseState, tier: number): HintPurchaseResult {
+  if (state.inFlight) return { ok: false, reason: "in-flight" };
+  if (tier !== state.revealedCount) return { ok: false, reason: "out-of-order" };
+  if (tier >= HINT_TIERS.length) return { ok: false, reason: "already-complete" };
+
+  const cost = hintInkCost(tier);
+  if (state.ink < cost) return { ok: false, reason: "insufficient-ink" };
+
+  return {
+    ok: true,
+    ink: state.ink - cost,
+    revealedCount: state.revealedCount + 1,
+  };
+}
+
+function clampTier(tier: number): number {
+  if (!Number.isFinite(tier)) return 0;
+  const index = Math.floor(tier);
+  if (index < 0) return 0;
+  if (index >= HINT_TIERS.length) return HINT_TIERS.length - 1;
+  return index;
+}
 
 /* -------------------------------------------------------------------------- */
 /*                               Mission Data                                 */
@@ -56,7 +146,7 @@ export const MISSIONS: Mission[] = [
     plaintext: "THE LANTERN BURNS BENEATH THE BRIDGE",
     xp: 100,
     hints: [
-      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "The key is a number from 1 to 25. Try the shift in both directions — wrapping past Z loops back to A.",
       "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
       "Start near the middle of the first half of the alphabet — halfway between 5 and 10.",
     ],
@@ -69,9 +159,9 @@ export const MISSIONS: Mission[] = [
     plaintext: "MEASURE THE SHADOW AT HIGH NOON",
     xp: 150,
     hints: [
-      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "The key is a number from 1 to 25. Try the shift in both directions — wrapping past Z loops back to A.",
       "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
-      "The key sits almost exactly halfway through the alphabet — turn the wheel 13 steps.",
+      "The key sits almost exactly halfway through the alphabet — nearer the middle than either end.",
     ],
   },
   {
@@ -82,7 +172,7 @@ export const MISSIONS: Mission[] = [
     plaintext: "LIGHT THE BEACON WHEN STARS ALIGN",
     xp: 150,
     hints: [
-      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "The key is a number from 1 to 25. Try the shift in both directions — wrapping past Z loops back to A.",
       "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
       "The key is the smallest you have seen — the very start of the alphabet, what you would try first.",
     ],
@@ -95,9 +185,9 @@ export const MISSIONS: Mission[] = [
     plaintext: "THE KEY IS BURIED NEAR THE RIVER",
     xp: 200,
     hints: [
-      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "The key is a number from 1 to 25. Try the shift in both directions — wrapping past Z loops back to A.",
       "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
-      "Count the fingers on one hand — that small number is your key.",
+      "The key is smaller than the number of fingers on one hand.",
     ],
   },
   {
@@ -108,9 +198,9 @@ export const MISSIONS: Mission[] = [
     plaintext: "FOLLOW THE NORTH STAR TO THE CAVE",
     xp: 200,
     hints: [
-      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "The key is a number from 1 to 25. Try the shift in both directions — wrapping past Z loops back to A.",
       "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
-      "The key is a single digit just under ten — one less than the number of fingers you have.",
+      "The key is a single digit just under ten.",
     ],
   },
   {
@@ -121,7 +211,7 @@ export const MISSIONS: Mission[] = [
     plaintext: "THE TREASURE SLEEPS UNDER THE SAND",
     xp: 250,
     hints: [
-      "The key is a number from 1 to 25. Try turning the wheel both ways.",
+      "The key is a number from 1 to 25. Try the shift in both directions — wrapping past Z loops back to A.",
       "In English, the letter 'E' shows up the most. Find the most common letter in the scrambled message — it's probably 'E'.",
       "Just past ten — a little over halfway through the first half of the alphabet.",
     ],
@@ -188,21 +278,22 @@ export function decodeText(ciphertext: string, shift: number): string {
  *
  * Base mission XP, plus a speed bonus for every second under the 60 s cap
  * (2 pts/sec, never negative), minus 10 pts for every attempt beyond the
- * first, minus 15 pts per hint used. The result is clamped so a score can
- * never drop below 0.
+ * first, minus `hintScorePenalty` — the summed score cost of every hint
+ * tier purchased from the graduated ladder (10 + 20 + 35 across tiers).
+ * The result is clamped so a score can never drop below 0.
  */
 export function scoreMission(
   mission: Mission,
   attempts: number,
-  hintsUsed: number,
+  hintScorePenalty: number,
   timeSec: number,
 ): number {
   const time = Number.isFinite(timeSec) ? Math.max(0, Math.floor(timeSec)) : Infinity;
   const speedBonus = Math.max(0, SPEED_BONUS_CAP_SEC - time) * SPEED_PER_SEC;
   const attemptPenalty = (attempts - 1) * ATTEMPT_PENALTY;
-  const hintPenalty = hintsUsed * HINT_SCORE_COST;
+  const penalty = Number.isFinite(hintScorePenalty) ? Math.max(0, hintScorePenalty) : 0;
 
-  return Math.round(Math.max(0, mission.xp + speedBonus - attemptPenalty - hintPenalty));
+  return Math.round(Math.max(0, mission.xp + speedBonus - attemptPenalty - penalty));
 }
 
 /** Title earned at a given XP total. */
